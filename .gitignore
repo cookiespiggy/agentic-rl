@@ -1,0 +1,29 @@
+# Python
+.venv/
+**/.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# 模型与训练产物
+sft_output/
+grpo_output/
+*.safetensors
+*.bin
+*.gguf
+hf_cache/
+logs/
+*.log
+wandb/
+
+# IDE / 本地工具
+.vscode/
+.specstory/
+.cursorindexingignore
+.DS_Store
+
+# 内部协作文档（含本地路径，不公开）
+handoff.md

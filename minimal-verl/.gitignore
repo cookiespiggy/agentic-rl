@@ -1,0 +1,22 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# 模型与数据
+sft_output/
+grpo_output/
+*.safetensors
+*.bin
+*.gguf
+
+# HF 缓存
+hf_cache/
+
+# 训练日志
+logs/
+*.log
+wandb/

@@ -1,0 +1,16 @@
+[project]
+name = "minimal-verl"
+version = "0.1.0"
+description = "Agentic RL minimal runnable example: SFT + GRPO on sentiment classification"
+requires-python = ">=3.12"
+readme = "README.md"
+dependencies = [
+    "torch>=2.5.0",
+    "transformers>=4.46.0",
+    "trl>=0.12.0",
+    "datasets>=3.0.0",
+    "accelerate>=1.0.0",
+    "huggingface-hub>=0.26.0",
+    "safetensors>=0.4.0",
+    "numpy<2.0",
+]
