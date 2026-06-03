@@ -52,7 +52,7 @@ def main() -> None:
     t0 = time.time()
     model = AutoModelForCausalLM.from_pretrained(
         MODEL_NAME,
-        torch_dtype=torch.float32,
+        dtype=torch.float32,
     )
     model.to(device)
     model.eval()
