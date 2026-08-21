@@ -1,3 +1,5 @@
+
+
 # Agentic RL 零基础教程 · 从概念到 GRPO 实战
 
 > **面向小白的 Agentic RL（智能体强化学习）系统教程** — 24 篇中文 Markdown，配套可运行的 TRL 最小示例。  
@@ -91,7 +93,7 @@
 ```bash
 cd minimal-verl
 uv sync
-uv run python scripts/00_check_env.py   # 环境验证（5 步）
+uv run python scripts/00_check_env.py   # 环境验证（4 步）
 ```
 
 详细进度见 [minimal-verl/docs/PROGRESS.md](./minimal-verl/docs/PROGRESS.md)。
