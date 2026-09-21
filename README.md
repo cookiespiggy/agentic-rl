@@ -1,7 +1,7 @@
 # Agentic RL 零基础教程 · 从概念到 GRPO 实战
 
 > **面向小白的 Agentic RL（智能体强化学习）系统教程** — 25 篇中文 Markdown，配套可运行的 TRL 最小示例。  
-> 搜「Agentic RL 教程」「GRPO 入门」「LLM 强化学习」「verl TRL 实战」都能找到这里。
+> 搜「Agentic RL 教程」「GRPO 入门」「LLM 强化学习」「verl TRL 实战」「Jev 与 RL 的边界」「System One 判别模型」都能找到这里。
 
 [![GitHub stars](https://img.shields.io/github/stars/cookiespiggy/agentic-rl?style=social)](https://github.com/cookiespiggy/agentic-rl)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -18,6 +18,7 @@
 | 完全零基础，没听过 RL | [01 - 什么是 Agentic RL](./01-什么是Agentic-RL-概念与愿景.md) |
 | 懂 LLM，想搞懂 SFT / RLHF / GRPO | [03 - LLM 与 Post-Training](./03-LLM与Post-Training基础.md) → [08 - GRPO 深度解析](./08-GRPO深度解析.md) |
 | 想动手跑训练 | [minimal-verl/](./minimal-verl/) 最小示例 + [15 - 第一个训练实战](./15-第一个Agentic-RL训练实战.md) |
+| **搜「Jev」进来的** | [25 - 判别能力外置：Jev 出现后，什么时候不该用 RL](./25-判别能力外置-什么时候不该用RL.md) |
 
 **核心理念**：小模型 + Agentic RL，在垂直任务上可以超越更大的通用 LLM。
 
@@ -78,15 +79,19 @@
 
 | 章节 | 主题 |
 |------|------|
-| [25](./25-判别能力外置-什么时候不该用RL.md) | **判别能力外置：什么时候不该用 RL** |
+| [25](./25-判别能力外置-什么时候不该用RL.md) | **判别能力外置：Jev 出现后，什么时候不该用 RL** |
 
 ---
 
-## 与判别模型的关系（重要）
+## Jev 与 RL 的边界（从「Jev」搜过来的话，先看这一节）
 
-2026 年 9 月，闭集判断模型（System One / Jev 类）出现后，一个自然的问题是：**判别类任务还需要自己 RL 吗？**
+2026 年 9 月，TypeSafe AI 发布首个 **System One** 模型 **Jev**——它不生成文本，只返回类型化决策（`choice` / `score` / `noul`），单次延迟 70–500 ms。
+
+这带来一个绕不开的问题：**判别类任务还需要自己 RL 吗？**
 
 本教程的立场是：**判别类可以外置，策略类必须自己训。**
+
+> **一句话回答**：Jev 替代的不是 RL，而是"用 RL 去做判别任务"这个做法。它本身就是 RL 的产物——置信度校准能力来自 RLCD（Reinforcement Learning for Calibrated Decisions），所以理解 RL，才能理解它的边界在哪里失效。
 
 | 任务类型 | 该用什么 | 本教程对应章节 |
 |---------|---------|--------------|
@@ -102,6 +107,8 @@
 3. **判断模型本身就是 RL 的产物。** 其置信度校准能力来自 RLCD（Reinforcement Learning for Calibrated Decisions）。理解 RL，才能理解它的能力边界在哪里失效。
 
 **一句话**：本教程教的不是"怎么训一个分类器"，而是"怎么让模型学会在一条轨迹上做对决策"。前者可以被 Schema 替代，后者不行。
+
+**本仓库的定位**：大多数 Jev 内容讲的是"它多快、多便宜、怎么接入"。而"它替代了什么、没替代什么"这个问题，需要同时理解 RL 与判断模型才能回答——本仓库补的正是这一块。
 
 ---
 
@@ -139,7 +146,7 @@ uv run python scripts/00_check_env.py   # 环境验证（5 步）
 
 ## 关键词（方便搜索）
 
-`Agentic RL` · `智能体强化学习` · `GRPO` · `PPO` · `DPO` · `RLHF` · `RLVR` · `LLM Post-Training` · `verl` · `TRL` · `Qwen` · `SFT` · `Reward Shaping` · `工具调用 Agent` · `小模型 RL` · `判别能力外置` · `System One` · `闭集判断` · `能力边界` · `梯度扫描`
+`Agentic RL` · `智能体强化学习` · `GRPO` · `PPO` · `DPO` · `RLHF` · `RLVR` · `LLM Post-Training` · `verl` · `TRL` · `Qwen` · `SFT` · `Reward Shaping` · `工具调用 Agent` · `小模型 RL` · **`Jev`** · `TypeSafe` · `System One` · `判别模型` · `闭集判断` · `判别能力外置` · `RLCD` · `能力边界` · `梯度扫描`
 
 ---
 
