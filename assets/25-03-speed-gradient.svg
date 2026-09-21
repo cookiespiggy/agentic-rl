@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 440" width="760" height="440" font-family="system-ui, -apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif">
+  <defs>
+    <marker id="arrowOrange" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#d9480f"/>
+    </marker>
+  </defs>
+
+  <rect width="760" height="440" fill="#ffffff" rx="10"/>
+
+  <text x="70" y="28" font-size="17" font-weight="700" fill="#212529">safety_tier = auto 的概率 vs 车速</text>
+  <text x="70" y="48" font-size="12" fill="#868e96">固定：音区 · 挡位 · 时间 · ASR 转写 · Schema　　唯一变化：车速</text>
+
+  <!-- 网格与 Y 轴刻度 -->
+  <g stroke="#e9ecef" stroke-width="1">
+    <line x1="70" y1="64"  x2="720" y2="64"/>
+    <line x1="70" y1="166" x2="720" y2="166"/>
+    <line x1="70" y1="268" x2="720" y2="268"/>
+    <line x1="70" y1="370" x2="720" y2="370"/>
+  </g>
+  <g font-size="12" fill="#868e96" text-anchor="end">
+    <text x="60" y="68">0.95</text>
+    <text x="60" y="170">0.90</text>
+    <text x="60" y="272">0.85</text>
+    <text x="60" y="374">0.80</text>
+  </g>
+
+  <!-- 坐标轴 -->
+  <line x1="70" y1="370" x2="720" y2="370" stroke="#adb5bd" stroke-width="1.5"/>
+  <line x1="70" y1="64"  x2="70"  y2="370" stroke="#adb5bd" stroke-width="1.5"/>
+
+  <!-- 静止基线 0.92 -->
+  <line x1="70" y1="125.2" x2="720" y2="125.2" stroke="#adb5bd" stroke-width="1" stroke-dasharray="5 4"/>
+  <text x="716" y="119" font-size="11" fill="#868e96" text-anchor="end">静止基线 0.92</text>
+
+  <!-- X 轴刻度标签 -->
+  <g font-size="12" fill="#495057" text-anchor="middle">
+    <text x="70"     y="392">0</text>
+    <text x="178.3"  y="392">20</text>
+    <text x="286.7"  y="392">40</text>
+    <text x="395"    y="392">60</text>
+    <text x="503.3"  y="392">80</text>
+    <text x="611.7"  y="392">100</text>
+    <text x="720"    y="392">120</text>
+  </g>
+  <text x="395" y="412" font-size="12" fill="#868e96" text-anchor="middle">车速 (km/h)</text>
+
+  <!-- 数据折线 -->
+  <polyline points="70,125.2 178.3,186.4 286.7,186.4 395,206.8 503.3,308.8 611.7,186.4 720,288.4"
+            fill="none" stroke="#1971c2" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+
+  <!-- 数据点 -->
+  <g fill="#1971c2">
+    <circle cx="70"    cy="125.2" r="5"/>
+    <circle cx="178.3" cy="186.4" r="5"/>
+    <circle cx="286.7" cy="186.4" r="5"/>
+    <circle cx="395"   cy="206.8" r="5"/>
+    <circle cx="503.3" cy="308.8" r="6"/>
+    <circle cx="611.7" cy="186.4" r="6"/>
+    <circle cx="720"   cy="288.4" r="5"/>
+  </g>
+
+  <!-- 数值标签 -->
+  <g font-size="12" font-weight="600" fill="#1971c2" text-anchor="middle">
+    <text x="70"    y="115">0.92</text>
+    <text x="178.3" y="176">0.89</text>
+    <text x="286.7" y="176">0.89</text>
+    <text x="395"   y="197">0.88</text>
+    <text x="503.3" y="331">0.83</text>
+    <text x="611.7" y="176">0.89</text>
+    <text x="720"   y="309">0.84</text>
+  </g>
+
+  <!-- 异常标注：80 → 100 回升 -->
+  <path d="M 522 299 Q 558 250 594 205" fill="none" stroke="#d9480f" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrowOrange)"/>
+  <text x="556" y="256" font-size="13" font-weight="700" fill="#d9480f" text-anchor="middle">车速上升，概率反而回升 +0.06</text>
+
+  <!-- 结论标注 -->
+  <text x="70" y="434" font-size="12" fill="#d9480f" font-weight="600">非单调 ⇒ 模型没有在读取车速；120 km/h 下仍有 0.84 的概率被判为「可即时执行」</text>
+</svg>
