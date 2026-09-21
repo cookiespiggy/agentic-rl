@@ -136,7 +136,7 @@ tags: ["Agentic RL", "概念", "愿景", "综述"]
 
 1. **Survey 综述**：[The Landscape of Agentic Reinforcement Learning for LLMs](https://arxiv.org/abs/2509.02547) — 综合 500+ 篇工作的权威 Survey（arXiv:2509.02547, 2026.04 更新 v5）
 2. **NVIDIA Position Paper**：Belcak et al., [Small Language Models are the Future of Agentic AI](https://arxiv.org/abs/2506.02153)（arXiv:2506.02153, 2025）
-3. **GitHub Repo**：[Agentic-RL-Training-Recipes](https://github.com/blacksnail789521/Agentic-RL-Training-Recipes) — 精选训练方案合集
+3. **训练方案合集**：想看精选的 Agentic RL 训练方案与调参踩坑记录？**之后我会单独出一期来整理**，这里先不展开。
 
 ---
 
