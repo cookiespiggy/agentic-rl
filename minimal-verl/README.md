@@ -47,7 +47,7 @@
 
 ```bash
 # 1. 克隆 + 装环境（首次约 1-3 分钟下载包）
-cd /Users/jimmy/Workspaces/agentic-rl/minimal-verl
+cd minimal-verl   # 在克隆好的仓库根目录下执行
 uv sync
 
 # 2. 验证环境（MPS + Qwen 加载 + 推理速度）
