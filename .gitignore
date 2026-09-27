@@ -7,6 +7,13 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.coverage
+htmlcov/
+
+# 打包产物
+build/
+dist/
+*.egg-info/
 
 # 模型与训练产物
 sft_output/
@@ -21,6 +28,8 @@ wandb/
 
 # IDE / 本地工具
 .vscode/
+.idea/
+.ipynb_checkpoints/
 .specstory/
 .cursorindexingignore
 .DS_Store
@@ -28,3 +37,6 @@ wandb/
 # 内部协作文档（含本地路径，不公开）
 handoff.md
 minimal-verl/docs/PROGRESS.md
+
+# 助手工作区（本地工作笔记，不属于教程内容）
+.workbuddy-ai/

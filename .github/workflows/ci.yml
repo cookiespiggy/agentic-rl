@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  bench:
+    name: minimal-decision-bench（lint + 测试）
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: minimal-decision-bench
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      # 只装 dev 组：依赖 torch 的那条用例会用 importorskip 自动跳过，
+      # 不需要为了 CI 拉几百 MB 的 torch。
+      - name: 同步依赖
+        run: uv sync --group dev
+
+      - name: Lint
+        run: uv run ruff check src scripts tests
+
+      - name: 测试
+        run: uv run pytest -q tests
+
+  docs:
+    name: 教程链接检查
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # 章节里的「对应工程锚点」链接一旦失效，读者点过去就是 404。
+      # 这是教程仓库最容易悄悄腐烂的地方。
+      - name: 检查章节相对链接
+        run: python tools/check_chapter_links.py

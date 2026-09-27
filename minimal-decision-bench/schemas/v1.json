@@ -1,0 +1,61 @@
+{
+  "schema_id": "saas-router-v1",
+  "version": "1.1.0",
+  "questions": {
+    "intent": {
+      "type": "choice",
+      "instructions": "将输入请求路由到对应业务队列",
+      "criteria": {
+        "billing": "扣费、退款、发票、账单问题",
+        "support": "报错、故障、不可用、接口异常",
+        "sales": "报价、套餐、采购、升级咨询",
+        "general": "无法归入以上类别"
+      },
+      "annotation_protocol": {
+        "primary_action": "以用户主诉求为准——明确要求执行、且未被「顺便 / 另外」降级的那个动作。仅作背景描述出现的类别词不计入。",
+        "multi_action": "多个诉求并列、无法区分主次时，按「直接经济损失(billing) > 功能不可用(support) > 商务动作(sales) > 一般咨询(general)」取最高优先级。",
+        "excluded_action": "用户显式排除的诉求不计入。",
+        "examples": [
+          {
+            "text": "续费之后系统就一直报错。",
+            "label": "support",
+            "reason": "「续费」只是背景，用户要求的动作是修系统"
+          },
+          {
+            "text": "报价页面打不开，能直接发我价格吗？",
+            "label": "sales",
+            "reason": "用户要求的动作是问价，页面故障只是背景"
+          },
+          {
+            "text": "能便宜点吗，顺便问下发票怎么开",
+            "label": "sales",
+            "reason": "「顺便」把发票问题降级为次要诉求，主诉求是议价"
+          },
+          {
+            "text": "账单我不管，先把我账号弄好",
+            "label": "support",
+            "reason": "账单诉求被用户显式排除"
+          },
+          {
+            "text": "报错信息一般在哪里看？",
+            "label": "general",
+            "reason": "问的是操作方式，不是报告故障"
+          }
+        ]
+      }
+    },
+    "complexity": {
+      "type": "score",
+      "instructions": "任务处理复杂度评分，0表示低，1表示高",
+      "criteria": ["low", "medium", "high"]
+    },
+    "needs_escalation": {
+      "type": "bool",
+      "instructions": "是否需要升级到更强模型或人工复核"
+    }
+  },
+  "routing": {
+    "cheap_threshold": 0.85,
+    "mid_threshold": 0.6
+  }
+}

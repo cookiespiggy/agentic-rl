@@ -1,0 +1,32 @@
+[project]
+name = "minimal-decision-bench"
+version = "0.2.0"
+description = "三方判别基准：encoder-only vs Qwen3.5-0.8B-Base LoRA vs 关键词规则基线"
+requires-python = ">=3.12"
+readme = "README.md"
+dependencies = [
+    # matplotlib 3.11 要求 numpy>=2，实测 2.x 下指标与推理链路均正常
+    "numpy>=1.26,<3",
+    "scikit-learn>=1.5.0"
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "ruff>=0.16.8",
+    "matplotlib>=3.9",
+]
+# 量化与 ONNX 基准（scripts/10_quantize_benchmark.py）才需要，主流程不依赖
+quantize = [
+    "onnxruntime>=1.20",
+    "onnx>=1.17",
+]
+train = [
+    "torch>=2.5.0",
+    "transformers>=4.46.0",
+    "datasets>=3.0.0",
+    "accelerate>=1.0.0",
+    "peft>=0.14.0",
+    "sentencepiece>=0.2.2",
+    "tiktoken>=0.14.0",
+]

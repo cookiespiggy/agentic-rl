@@ -1,10 +1,13 @@
 # Agentic RL 零基础教程 · 从概念到 GRPO 实战
 
-> **面向小白的 Agentic RL（智能体强化学习）系统教程** — 25 篇中文 Markdown，配套可运行的 TRL 最小示例。  
+> **面向小白的 Agentic RL（智能体强化学习）系统教程** — 33 篇中文 Markdown，配套可运行的 TRL 最小示例。  
 > 搜「Agentic RL 教程」「GRPO 入门」「LLM 强化学习」「verl TRL 实战」「Jev 与 RL 的边界」「System One 判别模型」都能找到这里。
 
 [![GitHub stars](https://img.shields.io/github/stars/cookiespiggy/agentic-rl?style=social)](https://github.com/cookiespiggy/agentic-rl)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![CI](https://github.com/cookiespiggy/agentic-rl/actions/workflows/ci.yml/badge.svg)](https://github.com/cookiespiggy/agentic-rl/actions/workflows/ci.yml)
+
+> **只想看结论？** → [`minimal-decision-bench/FINDINGS.md`](./minimal-decision-bench/FINDINGS.md)：一页纸说清「这个实证工程证明了什么、没证明什么」。
 
 ---
 
@@ -19,12 +22,37 @@
 | 懂 LLM，想搞懂 SFT / RLHF / GRPO | [03 - LLM 与 Post-Training](./03-LLM与Post-Training基础.md) → [08 - GRPO 深度解析](./08-GRPO深度解析.md) |
 | 想动手跑训练 | [minimal-verl/](./minimal-verl/) 最小示例 + [15 - 第一个训练实战](./15-第一个Agentic-RL训练实战.md) |
 | **搜「Jev」进来的** | [25 - 判别能力外置：Jev 出现后，什么时候不该用 RL](./25-判别能力外置-什么时候不该用RL.md) |
+| 想从零造垂类判断模型 | [26-33 垂直领域判别模型实现线](./26-垂直领域判别模型总览-从判别外置到自建内核.md) |
 
 **核心理念**：小模型 + Agentic RL，在垂直任务上可以超越更大的通用 LLM。
 
 ---
 
-## 学习路线（25 章）
+## 小白先看：从教程到代码的 30 分钟闭环
+
+如果你第一次接触这个仓库，按下面顺序走，不会迷路：
+
+1. 先读 [26](./26-垂直领域判别模型总览-从判别外置到自建内核.md) 理解目标与边界。
+2. 打开 [`minimal-decision-bench/LEARNER-GUIDE.md`](./minimal-decision-bench/LEARNER-GUIDE.md) 看“章节到代码”导航图。
+3. 在 `minimal-decision-bench/` 里执行 `make main`（等价于依次跑 `00_make_data.py → 01_train_encoder.py → 02_train_qwen_lora.py → 03_compare_and_route.py → 05_eval_hard_cases.py → 06_benchmark_latency.py → 09_make_figures.py`）。想看稳健结论再跑 `make cv`。
+4. 带着报告回读 27–33，逐章对照“为什么这样设计”。
+
+26–33 与 `minimal-decision-bench` 的一一对应如下：
+
+| 教程章节 | 你要理解什么 | 直接对应的工程文件 |
+|---|---|---|
+| [26](./26-垂直领域判别模型总览-从判别外置到自建内核.md) | 系统边界与发布边界 | [`README.md`](./minimal-decision-bench/README.md), [`LEARNER-GUIDE.md`](./minimal-decision-bench/LEARNER-GUIDE.md) |
+| [27](./27-任务建模-把业务流程压成可训练Schema.md) | schema 建模 | [`schemas/v1.json`](./minimal-decision-bench/schemas/v1.json), [`src/minimal_decision_bench/schema.py`](./minimal-decision-bench/src/minimal_decision_bench/schema.py) |
+| [28](./28-数据工程I-标注协议与难例覆盖.md) | 数据协议与 hard cases | [`scripts/00_make_data.py`](./minimal-decision-bench/scripts/00_make_data.py), [`src/minimal_decision_bench/data_builder.py`](./minimal-decision-bench/src/minimal_decision_bench/data_builder.py) |
+| [29](./29-数据工程II-规则基线与错误剖面.md) | 可解释基线与误差剖面意识 | [`scripts/03_compare_and_route.py`](./minimal-decision-bench/scripts/03_compare_and_route.py), [`reports/comparison_report.json`](./minimal-decision-bench/reports/comparison_report.json) |
+| [30](./30-模型骨架-Encoder+DecisionHead设计.md) | 三头任务骨架 | [`src/minimal_decision_bench/trainers.py`](./minimal-decision-bench/src/minimal_decision_bench/trainers.py), [`scripts/01_train_encoder.py`](./minimal-decision-bench/scripts/01_train_encoder.py) |
+| [31](./31-训练与校准-让置信度真正可用.md) | 训练与置信度指标 | [`src/minimal_decision_bench/metrics.py`](./minimal-decision-bench/src/minimal_decision_bench/metrics.py), [`reports/encoder_metrics.json`](./minimal-decision-bench/reports/encoder_metrics.json), [`reports/qwen_lora_metrics.json`](./minimal-decision-bench/reports/qwen_lora_metrics.json) |
+| [32](./32-推理优化-量化批处理与延迟基准.md) | 推理路径与部署前优化 | [`src/minimal_decision_bench/routing.py`](./minimal-decision-bench/src/minimal_decision_bench/routing.py), [`scripts/03_compare_and_route.py`](./minimal-decision-bench/scripts/03_compare_and_route.py) |
+| [33](./33-上线治理-灰度回滚与持续进化.md) | 上线治理与回滚策略 | [`reports/comparison_report.json`](./minimal-decision-bench/reports/comparison_report.json)（作为治理输入样例） |
+
+---
+
+## 学习路线（33 章）
 
 ### 阶段一 · 基础概念（01–05）
 
@@ -81,11 +109,26 @@
 |------|------|
 | [25](./25-判别能力外置-什么时候不该用RL.md) | **判别能力外置：Jev 出现后，什么时候不该用 RL** |
 
+### 阶段七 · 垂直领域判别模型 实现线（26–33）
+
+| 章节 | 主题 |
+|------|------|
+| [26](./26-垂直领域判别模型总览-从判别外置到自建内核.md) | 垂直领域判别模型 总览：从判别外置到自建内核 |
+| [27](./27-任务建模-把业务流程压成可训练Schema.md) | 任务建模：把业务流程压成可训练 Schema |
+| [28](./28-数据工程I-标注协议与难例覆盖.md) | 数据工程 I：标注协议与难例覆盖 |
+| [29](./29-数据工程II-规则基线与错误剖面.md) | 数据工程 II：规则基线与错误剖面 |
+| [30](./30-模型骨架-Encoder+DecisionHead设计.md) | 模型骨架：Encoder + Decision Head 设计 |
+| [31](./31-训练与校准-让置信度真正可用.md) | 训练与校准：让置信度真正可用 |
+| [32](./32-推理优化-量化批处理与延迟基准.md) | 推理优化：量化、批处理与延迟基准 |
+| [33](./33-上线治理-灰度回滚与持续进化.md) | 上线治理：灰度、回滚与持续进化 |
+
 ---
 
 ## Jev 与 RL 的边界（从「Jev」搜过来的话，先看这一节）
 
 2026 年 9 月，TypeSafe AI 发布首个 **System One** 模型 **Jev**——它不生成文本，只返回类型化决策（`choice` / `score` / `noul`），单次延迟 70–500 ms。
+
+> 口径说明：Jev 术语里常写 `noul`；本仓库 26–33 章的工程实现统一落到 `bool` 字段（如 `needs_escalation: true/false`），语义等价。
 
 这带来一个绕不开的问题：**判别类任务还需要自己 RL 吗？**
 
@@ -131,6 +174,26 @@ uv run python scripts/00_check_env.py   # 环境验证（5 步）
 ```
 
 详细进度见 [minimal-verl/docs/PROGRESS.md](./minimal-verl/docs/PROGRESS.md)。
+
+如果你要的是“垂直领域判别模型”的工程闭环实践（对应 26–33 章），请看：
+
+```bash
+cd minimal-decision-bench
+uv sync
+uv sync --group train   # 训练依赖（torch/transformers/peft）
+uv run python scripts/00_make_data.py
+uv run python scripts/01_train_encoder.py --model-path /path/to/hfl-chinese-macbert-base
+uv run python scripts/02_train_qwen_lora.py --model-path /path/to/Qwen3.5-0.8B-Base/snapshots/master
+uv run python scripts/03_compare_and_route.py
+```
+
+> 中国大陆网络建议先设置镜像并使用本地模型目录：
+>
+> `UV_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple`
+
+项目入口：[`minimal-decision-bench/`](./minimal-decision-bench/)
+
+> 发布边界说明：`minimal-decision-bench` 当前默认数据为教程合成集，文档中的小样本命令主要用于链路验证（smoke / e2e）。这些结果用于证明“工程可跑通”，**不代表**真实业务效果的最终结论；对外结论请基于真实业务数据和固定评测协议复现实验后再发布。
 
 ---
 
