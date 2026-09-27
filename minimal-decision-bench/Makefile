@@ -13,7 +13,7 @@ QWEN_MODEL ?= /path/to/Qwen3.5-0.8B-Base/snapshots/master
 UV ?= $(shell command -v uv 2>/dev/null || echo $(HOME)/.local/bin/uv)
 
 .PHONY: help sync data encoder qwen compare hard latency quantize cascade confidence \
-        multiseed cv figures figures-check main check test lint links checkpoints-clean
+        multiseed cv figures figures-check main check test lint links secrets checkpoints-clean
 
 help:  ## 查看全部目标
 	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) \
@@ -67,7 +67,10 @@ figures:  ## 生成教程图表到 ../assets/
 
 main: data encoder qwen compare hard latency figures  ## 主流程（不含慢的多种子与 CV）
 
-check: lint test links figures-check  ## CI 里的全部检查 + 图表新鲜度
+check: lint test links secrets figures-check  ## CI 里的全部检查 + 密钥扫描 + 图表新鲜度
+
+secrets:  ## 扫描 git 跟踪文件与提交历史里是否混进凭据
+	python ../tools/check_no_secrets.py --history
 
 figures-check:  ## 检查图表是否比源报告旧（图由 reports/ 生成，容易静默过期）
 	$(UV) run python scripts/09_make_figures.py --check

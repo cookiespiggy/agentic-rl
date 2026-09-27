@@ -33,10 +33,13 @@ jobs:
         run: uv run pytest -q tests
 
   docs:
-    name: 教程链接检查
+    name: 教程链接检查与密钥扫描
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # 密钥扫描要遍历全部提交历史，浅克隆（默认 fetch-depth: 1）看不到历史
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
@@ -46,3 +49,7 @@ jobs:
       # 这是教程仓库最容易悄悄腐烂的地方。
       - name: 检查章节相对链接
         run: python tools/check_chapter_links.py
+
+      # .gitignore 拦不住「写进代码里的密钥」；而密钥一旦进历史，删文件也没用。
+      - name: 扫描凭据（含提交历史）
+        run: python tools/check_no_secrets.py --history
