@@ -44,11 +44,11 @@
 | [26](./26-垂直领域判别模型总览-从判别外置到自建内核.md) | 系统边界与发布边界 | [`README.md`](./minimal-decision-bench/README.md), [`LEARNER-GUIDE.md`](./minimal-decision-bench/LEARNER-GUIDE.md) |
 | [27](./27-任务建模-把业务流程压成可训练Schema.md) | schema 建模 | [`schemas/v1.json`](./minimal-decision-bench/schemas/v1.json), [`src/minimal_decision_bench/schema.py`](./minimal-decision-bench/src/minimal_decision_bench/schema.py) |
 | [28](./28-数据工程I-标注协议与难例覆盖.md) | 数据协议与 hard cases | [`scripts/00_make_data.py`](./minimal-decision-bench/scripts/00_make_data.py), [`src/minimal_decision_bench/data_builder.py`](./minimal-decision-bench/src/minimal_decision_bench/data_builder.py) |
-| [29](./29-数据工程II-规则基线与错误剖面.md) | 可解释基线与误差剖面意识 | [`scripts/03_compare_and_route.py`](./minimal-decision-bench/scripts/03_compare_and_route.py), [`reports/comparison_report.json`](./minimal-decision-bench/reports/comparison_report.json) |
+| [29](./29-数据工程II-规则基线与错误剖面.md) | 可解释基线与误差剖面意识 | [`scripts/03_compare_and_route.py`](./minimal-decision-bench/scripts/03_compare_and_route.py), `reports/comparison_report.json`（生成物） |
 | [30](./30-模型骨架-Encoder+DecisionHead设计.md) | 三头任务骨架 | [`src/minimal_decision_bench/trainers.py`](./minimal-decision-bench/src/minimal_decision_bench/trainers.py), [`scripts/01_train_encoder.py`](./minimal-decision-bench/scripts/01_train_encoder.py) |
-| [31](./31-训练与校准-让置信度真正可用.md) | 训练与置信度指标 | [`src/minimal_decision_bench/metrics.py`](./minimal-decision-bench/src/minimal_decision_bench/metrics.py), [`reports/encoder_metrics.json`](./minimal-decision-bench/reports/encoder_metrics.json), [`reports/qwen_lora_metrics.json`](./minimal-decision-bench/reports/qwen_lora_metrics.json) |
+| [31](./31-训练与校准-让置信度真正可用.md) | 训练与置信度指标 | [`src/minimal_decision_bench/metrics.py`](./minimal-decision-bench/src/minimal_decision_bench/metrics.py), `reports/encoder_metrics.json`, `reports/qwen_lora_metrics.json`（生成物） |
 | [32](./32-推理优化-量化批处理与延迟基准.md) | 推理路径与部署前优化 | [`src/minimal_decision_bench/routing.py`](./minimal-decision-bench/src/minimal_decision_bench/routing.py), [`scripts/03_compare_and_route.py`](./minimal-decision-bench/scripts/03_compare_and_route.py) |
-| [33](./33-上线治理-灰度回滚与持续进化.md) | 上线治理与回滚策略 | [`reports/comparison_report.json`](./minimal-decision-bench/reports/comparison_report.json)（作为治理输入样例） |
+| [33](./33-上线治理-灰度回滚与持续进化.md) | 上线治理与回滚策略 | `reports/comparison_report.json`（生成物，作为治理输入样例） |
 
 ---
 
@@ -173,7 +173,7 @@ uv sync
 uv run python scripts/00_check_env.py   # 环境验证（5 步）
 ```
 
-详细进度见 [minimal-verl/docs/PROGRESS.md](./minimal-verl/docs/PROGRESS.md)。
+详细进度见 `minimal-verl/docs/PROGRESS.md`（内部协作文档，不入库）。
 
 如果你要的是“垂直领域判别模型”的工程闭环实践（对应 26–33 章），请看：
 
