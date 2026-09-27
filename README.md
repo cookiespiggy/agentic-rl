@@ -1,7 +1,9 @@
 # Agentic RL 零基础教程 · 从概念到 GRPO 实战
 
-> **面向小白的 Agentic RL（智能体强化学习）系统教程** — 33 篇中文 Markdown，配套可运行的 TRL 最小示例。  
-> 搜「Agentic RL 教程」「GRPO 入门」「LLM 强化学习」「verl TRL 实战」「Jev 与 RL 的边界」「System One 判别模型」都能找到这里。
+> **面向小白的 Agentic RL（智能体强化学习）系统教程** — 33 篇中文 Markdown + 两套可运行工程：
+> TRL 最小示例（[`minimal-verl/`](./minimal-verl/)）与判别模型三方对照实证（[`minimal-decision-bench/`](./minimal-decision-bench/)）。
+>
+> 搜「Agentic RL 教程」「GRPO 入门」「LLM 强化学习」「verl TRL 实战」「Jev 与 RL 的边界」「System One 判别模型」「判别能力外置」都能找到这里。
 
 [![GitHub stars](https://img.shields.io/github/stars/cookiespiggy/agentic-rl?style=social)](https://github.com/cookiespiggy/agentic-rl)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -25,6 +27,39 @@
 | 想从零造垂类判断模型 | [26-33 垂直领域判别模型实现线](./26-垂直领域判别模型总览-从判别外置到自建内核.md) |
 
 **核心理念**：小模型 + Agentic RL，在垂直任务上可以超越更大的通用 LLM。
+
+---
+
+## 实证工程：判别模型到底该怎么选（26–33 章配套）
+
+[`minimal-decision-bench/`](./minimal-decision-bench/) 不是示例代码，是一套**可复现的三方对照实验**——同一份 schema、同一份数据、同一套指标，把三条判别路线放在一起比：
+
+| 路线 | 角色 |
+|---|---|
+| 关键词规则 `rules_v0` | **下界**：不做模型能到多少 |
+| encoder-only（中文 MacBERT，102M） | **推荐路线** |
+| Qwen3.5-0.8B LoRA | **对照**：用 LLM 做同一件事 |
+
+**它得出的结论里有几条是反直觉的**（完整数据见 [`FINDINGS.md`](./minimal-decision-bench/FINDINGS.md)）：
+
+| 结论 | 证据 |
+|---|---|
+| 质量上 encoder 与 LLM **统计上无法区分** | 5 折交叉验证 intent F1 `0.9058` vs `0.8967`，差距仅 **0.33 倍标准差** |
+| 但成本差一个量级 | 端到端 P50 `20.67 ms` vs `142.51 ms`；部署体积 `390.6 MB` vs `1728.1 MB` |
+| **量化后 CPU 比 GPU 还快** | ONNX int8 `4.04 ms` vs MPS fp32 `6.78 ms`（快 1.68 倍），体积压到 1/4（`98.3 MB`） |
+| **置信度门控（级联）完全无效** | 扫 101 个阈值，帕累托前沿只剩 `encoder-only` **一个点** |
+| **数据集难度决定结论** | 早期模板下规则基线 F1 是 `1.0000`（比两个模型都高）——那时证明的是「不需要模型」 |
+
+规模：**13 个脚本 / 33 个报告 / 32 条测试 / 4 张图 / CI 全绿**。
+
+```bash
+cd minimal-decision-bench
+make sync && make main   # 造数据 → 训两条分支 → 三方对比 → 难例 → 延迟 → 图表（本机 7 分 40 秒）
+make cv                  # 5 折交叉验证（约 40 分钟，想要稳健结论再跑）
+make check               # lint + 测试 + 教程链接
+```
+
+> **发布边界**：默认数据是教程合成集，用于证明工程可跑通与结论方向；对外发布业务结论前，请替换为真实数据并固定评测协议后复现。
 
 ---
 
@@ -175,25 +210,11 @@ uv run python scripts/00_check_env.py   # 环境验证（5 步）
 
 详细进度见 `minimal-verl/docs/PROGRESS.md`（内部协作文档，不入库）。
 
-如果你要的是“垂直领域判别模型”的工程闭环实践（对应 26–33 章），请看：
-
-```bash
-cd minimal-decision-bench
-uv sync
-uv sync --group train   # 训练依赖（torch/transformers/peft）
-uv run python scripts/00_make_data.py
-uv run python scripts/01_train_encoder.py --model-path /path/to/hfl-chinese-macbert-base
-uv run python scripts/02_train_qwen_lora.py --model-path /path/to/Qwen3.5-0.8B-Base/snapshots/master
-uv run python scripts/03_compare_and_route.py
-```
+判别模型的工程闭环实践（对应 26–33 章）见上文「实证工程」一节——那里有完整命令与关键结论。
 
 > 中国大陆网络建议先设置镜像并使用本地模型目录：
 >
 > `UV_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple`
-
-项目入口：[`minimal-decision-bench/`](./minimal-decision-bench/)
-
-> 发布边界说明：`minimal-decision-bench` 当前默认数据为教程合成集，文档中的小样本命令主要用于链路验证（smoke / e2e）。这些结果用于证明“工程可跑通”，**不代表**真实业务效果的最终结论；对外结论请基于真实业务数据和固定评测协议复现实验后再发布。
 
 ---
 
@@ -209,7 +230,7 @@ uv run python scripts/03_compare_and_route.py
 
 ## 关键词（方便搜索）
 
-`Agentic RL` · `智能体强化学习` · `GRPO` · `PPO` · `DPO` · `RLHF` · `RLVR` · `LLM Post-Training` · `verl` · `TRL` · `Qwen` · `SFT` · `Reward Shaping` · `工具调用 Agent` · `小模型 RL` · **`Jev`** · `TypeSafe` · `System One` · `判别模型` · `闭集判断` · `判别能力外置` · `RLCD` · `能力边界` · `梯度扫描`
+`Agentic RL` · `智能体强化学习` · `GRPO` · `PPO` · `DPO` · `RLHF` · `RLVR` · `LLM Post-Training` · `verl` · `TRL` · `Qwen` · `SFT` · `Reward Shaping` · `工具调用 Agent` · `小模型 RL` · **`Jev`** · `TypeSafe` · `System One` · `判别模型` · `闭集判断` · `判别能力外置` · `RLCD` · `能力边界` · `梯度扫描` · `判别模型 benchmark` · `encoder 微调` · `MacBERT` · `规则基线` · `置信度校准` · `ECE` · `交叉验证` · `模型量化` · `ONNX Runtime` · `级联分流` · `推理延迟基准`
 
 ---
 
