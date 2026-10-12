@@ -13,6 +13,34 @@
 
 ---
 
+## 📚 同作者的姊妹篇：如果你还不会写 Python / 没做过 RAG
+
+<table>
+<tr>
+<td width="50%" valign="top">
+
+**《Java 转 AI 的 90 天》** — 写给 Java 后端工程师的 AI 转型路线
+
+[在线阅读](https://cookiespiggy.github.io/java-to-ai-in-90-days/) · [GitHub](https://github.com/cookiespiggy/java-to-ai-in-90-days)
+
+**本仓库 vs 那一本，区别在哪：**
+
+| | 《Java 转 AI 的 90 天》 | **本仓库** |
+|---|---|---|
+| 讲什么 | **应用层**：怎么把模型接进业务 | **训练层**：怎么让模型变强 |
+| 适合谁 | 会 Java，没碰过 AI | 已经能稳定上线 RAG/Agent |
+| RAG | [13 篇完整项目](https://github.com/cookiespiggy/java-to-ai-in-90-days/tree/main/projects/rag-project)，top1 **7/7** | 只讲检索原理 |
+| 本地推理 | [23 篇实测](https://cookiespiggy.github.io/java-to-ai-in-90-days/23-local-inference/)，本地 4B 零 API 费用 | [32 章量化与延迟基准](./32-推理优化-量化批处理与延迟基准.md) |
+| 实测数据 | 每篇都留了真实输出和踩坑记录 | 有三方对照实证 |
+
+**推荐路径：先读那本打底 → 再回来读本仓库拔高。**
+
+</td>
+</tr>
+</table>
+
+---
+
 ## 这是什么？
 
 **Agentic RL** 是把大语言模型（LLM）训练成**能规划、用工具、多轮交互**的智能体（Agent）的方法。  
