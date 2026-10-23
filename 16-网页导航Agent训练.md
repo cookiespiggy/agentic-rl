@@ -445,7 +445,7 @@ def has_valid_action_format(completion: str) -> bool:
 
 ### 16.5.1 SFT 训练数据示例
 
-> **SFT 超参（全书统一）**：学习率 **5e-5**、**5** 个 epoch。GRPO 阶段的学习率是 **1e-6**、**3** 个 epoch（见 §16.5.2）。别把两阶段的设置混用。
+> **超参口径（全书统一）**：SFT 用 **5e-5**（数据量大时可下调到 **1e-5**）、**5 个 epoch**；GRPO 用 **1e-6**、**3 个 epoch**（见 §16.5.2）。别把两阶段的设置混用。
 
 ```python
 # web_agent_sft_data.jsonl 中的样本

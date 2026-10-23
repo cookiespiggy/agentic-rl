@@ -290,9 +290,26 @@ def _print(report: dict) -> None:
         )
 
     survivors = report["significance_policy"]["survivors"]
-    print(f"\nHolm（m={report['significance_policy']['holm_m']}）后存活：{survivors or '（无）'}")
-    print("→ 没有指标在依赖校正 + Holm 后达到显著性门槛。")
-    print("  escalation Brier 方向 5/5 一致、幅度约 12%，但**未证实**，不能宣称显著。")
+    m = report["significance_policy"]["holm_m"]
+    print(f"\nHolm（m={m}）后存活：{survivors or '（无）'}")
+    if survivors:
+        print(f"→ 有 {len(survivors)} 个指标在依赖校正 + Holm 后达到显著性门槛：{survivors}")
+    else:
+        print(f"→ 没有指标在依赖校正 + Holm（m={m}）后达到显著性门槛。")
+
+    # 下面这段从数据推导，不写死——数据变了，文案会跟着变，不会悄悄说谎。
+    brier = comp["metrics"].get("escalation_brier")
+    if brier:
+        folds = brier["direction_consistent"]
+        naive = brier["paired_t"]["p"]
+        nb = brier["nadeau_bengio"]["p"]
+        wil = brier["wilcoxon_exact"]["p"]
+        if "escalation_brier" in survivors:
+            print(f"  escalation Brier 在 Holm 后存活（朴素 p={naive}，校正 p={nb}）——"
+                  f"可以说「在 {folds} 折上方向一致」")
+        else:
+            print(f"  escalation Brier 方向 {folds} 一致，但朴素 p={naive} -> 依赖校正 p={nb}"
+                  f" -> Wilcoxon p={wil}，**未证实**，不能宣称显著。")
 
     print("\n模型 vs 规则（描述性比值，ddof=0 口径）：")
     for branch, cmp_ in report["comparisons"]["model_vs_rules"].items():

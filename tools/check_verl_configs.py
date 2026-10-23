@@ -34,7 +34,10 @@ SNAPSHOT = ROOT / "tools" / "verl_config_keys.yaml"
 
 # 入口必须是这个（verl/trainer/ 下没有 main.py）
 ENTRYPOINT = "python -m verl.trainer.main_ppo"
-BAD_ENTRYPOINTS = ("python -m verl.trainer.main ", "python -m verl.trainer.main\\")
+BAD_ENTRYPOINTS = (
+    "python -m verl.trainer.main",   # 精确匹配：后面必须是 _ppo 或行尾
+)
+# 判据：出现 "verl.trainer.main" 且其后不是 "_ppo" → 错误
 
 # 必须显式写出的四个键
 REQUIRED_KEYS = (
@@ -119,10 +122,10 @@ def check_command(block: str, known: set[str], leaves: set[str]) -> list[str]:
     if "verl.trainer.main" not in block:
         return problems
 
-    for bad in BAD_ENTRYPOINTS:
-        if bad in block:
-            problems.append(f"入口应为 `{ENTRYPOINT}`，不是 `{bad.strip()}`")
-            break
+    # 入口必须精确是 main_ppo：出现 verl.trainer.main 而后面不是 _ppo 就是错的
+    for m in re.finditer(r"verl\.trainer\.main\b(?!_ppo)", block):
+        problems.append(f"入口应为 `{ENTRYPOINT}`，不是 `verl.trainer.main`")
+        break
 
     overrides: dict[str, str] = {}
     seen_entrypoint = False

@@ -109,7 +109,7 @@ def _report_stale() -> int:
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
     entries = manifest.get("figures", {})
 
-    for stem in SOURCES:
+    for stem, sources in SOURCES.items():
         figure = ASSETS / f"{stem}.png"
         if not figure.exists():
             stale.append(f"{stem}（图文件不存在）")
@@ -118,14 +118,33 @@ def _report_stale() -> int:
         if entry is None:
             stale.append(f"{stem}（清单里没有记录）")
             continue
-        for name, expected_hash in entry.get("sources", {}).items():
+        recorded = entry.get("sources", {})
+        # 遍历**声明的**源报告，而不是清单里记录的那部分。
+        # 否则「源报告被删 → 重跑一次生成 → 清单里那条依赖消失 → 守卫从此失明」
+        # 会发生：清单丢掉的依赖再也没人检查，那张图可以永远停在旧内容上。
+        for name in sources:
             path = ROOT / "reports" / name
+            if name not in recorded:
+                # 清单里没有这条依赖：如果报告存在，说明图是在它缺席时生成的；
+                # 如果报告也不存在，说明这条依赖从来没被满足过——不算过期。
+                if path.exists():
+                    stale.append(f"{stem}（清单里缺少源报告 {name} 的记录）")
+                continue
+            expected_hash = recorded[name]
             if not path.exists():
-                stale.append(f"{stem}（源报告 {name} 不存在）")
+                if expected_hash is not None:
+                    stale.append(f"{stem}（源报告 {name} 消失了）")
+                continue
+            if expected_hash is None:
+                stale.append(f"{stem}（清单里 {name} 的哈希为空，需要重新生成图）")
                 continue
             actual = _file_hash(path)
             if actual != expected_hash:
                 stale.append(f"{stem}（源报告 {name} 内容已变）")
+        # 清单里有、但已经不在声明里的记录——说明 SOURCES 改了，清单也该更新
+        for name in recorded:
+            if name not in sources:
+                stale.append(f"{stem}（清单里有多余的源报告 {name}）")
 
     if stale:
         print("以下图表比源报告旧，请重跑 scripts/09_make_figures.py：")
@@ -141,19 +160,22 @@ def _file_hash(path: Path) -> str:
 
 
 def _write_manifest() -> None:
-    """记录每张图的源报告内容哈希，供 figures-check 做内容寻址比对。"""
+    """记录每张图的源报告内容哈希，供 figures-check 做内容寻址比对。
+
+    **声明的每个源报告都要记一条**，哪怕它此刻不存在——记成 `null`。
+    否则「报告被删 → 重跑一次 → 清单里那条依赖消失 → 守卫从此失明」
+    就成立了：丢掉的依赖再也没人检查，那张图可以永远停在旧内容上。
+    """
     figures: dict[str, dict] = {}
     for stem, sources in SOURCES.items():
-        entry: dict[str, str] = {}
+        entry: dict[str, str | None] = {}
         for name in sources:
             path = ROOT / "reports" / name
-            if path.exists():
-                entry[name] = _file_hash(path)
-        if entry:
-            figures[stem] = {
-                "figure": f"{stem}.png",
-                "sources": entry,
-            }
+            entry[name] = _file_hash(path) if path.exists() else None
+        figures[stem] = {
+            "figure": f"{stem}.png",
+            "sources": entry,
+        }
     ASSETS.mkdir(parents=True, exist_ok=True)
     MANIFEST.write_text(
         json.dumps({"figures": figures}, ensure_ascii=False, indent=2),

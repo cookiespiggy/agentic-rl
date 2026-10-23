@@ -99,6 +99,11 @@ def main() -> None:
               f"python scripts/14_render_inference_docs.py")
         sys.exit(1)
     if args.check:
+        if skipped:
+            # 跳过的文档**没有被检查过**——不能说「全部一致」。
+            print(f"\n已检查的文档与源报告一致；另有 {len(skipped)} 个被跳过"
+                  f"（缺依赖或缺报告），它们**没有**被校验")
+            sys.exit(1)
         print("\n全部 inference 文档与源报告一致")
 
 
