@@ -23,6 +23,7 @@ jobs:
 
       # 只装 dev 组：依赖 torch 的那条用例会用 importorskip 自动跳过，
       # 不需要为了 CI 拉几百 MB 的 torch。
+      # dev 组里有 matplotlib（图表守卫）、scikit-learn 带来 scipy（统计检验）。
       - name: 同步依赖
         run: uv sync --group dev
 
@@ -34,6 +35,37 @@ jobs:
 
       - name: 测试
         run: uv run pytest -q tests
+
+      # 差距统计是纯后处理（读已入库的 cross_validation.json），秒级完成。
+      # 它产出的 reports/gap_stats.json 是文档里所有显著性表述的唯一来源。
+      - name: 差距统计（描述性比值 + 三层显著性检验）
+        run: uv run python scripts/13_gap_stats.py
+
+      # 图表过期守卫改成内容寻址（比源报告的内容哈希，不看 mtime）。
+      - name: 图表新鲜度（内容寻址）
+        run: uv run python scripts/09_make_figures.py --check
+
+      # inference/*.md 与 reports/*.json 必须是同一次运行的产物。
+      - name: inference 文档与源报告一致
+        run: uv run python scripts/14_render_inference_docs.py --check
+
+  minimal-verl:
+    name: minimal-verl（工具链示例的测试）
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: minimal-verl
+    steps:
+      - uses: actions/checkout@v4
+
+      # 这个项目的测试只用标准库（unittest），不碰 torch/trl——
+      # 所以 CI 里不需要装依赖，也就不必拉几百 MB 的 torch。
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 测试（纯标准库）
+        run: python3 -m unittest discover -s tests -v
 
   docs:
     name: 教程链接检查与密钥扫描
@@ -71,6 +103,117 @@ jobs:
       # 章节里的 Python 代码块要能解析，并且没有未定义名。
       - name: 检查章节 Python 代码块
         run: python tools/check_chapter_python.py
+
+      # inference/*.md 里的关键数字必须与 reports/*.json 一致。
+      - name: 检查 inference 镜像一致性
+        run: python tools/check_inference_mirror.py
+
+      # HTML 清洗会悄悄吞掉 `<think>` 这类标签（历史上 09 章就中过招）。
+      - name: 检查 HTML 敏感标签未被吞
+        run: |
+          python3 - <<'PY'
+          import pathlib, re, sys
+          PAT = re.compile(r"[有含带输][\u4e00-\u9fff]{0,2}\s{2,}(标签|tag)", re.IGNORECASE)
+          bad = []
+          for md in sorted(pathlib.Path(".").glob("[0-9][0-9]-*.md")):
+              for i, line in enumerate(md.read_text(encoding="utf-8").splitlines(), 1):
+                  if PAT.search(line):
+                      bad.append(f"{md.name}:{i}: {line.strip()[:70]}")
+          if bad:
+              print("\n".join(bad)); sys.exit(1)
+          print("✓ 没有被吞的标签")
+          PY
+
+      # ch06-10 的学习结构要与 ch02-05 对齐：目录 + 练习题 + 行内参考答案。
+      # 注意**不要** YAML frontmatter（072bdd8 已有意移除）。
+      - name: 检查 ch06-10 学习结构
+        run: |
+          python3 - <<'PY'
+          import pathlib, sys
+          bad = []
+          for p in ["06", "07", "08", "09", "10"]:
+              md = list(pathlib.Path(".").glob(f"{p}-*.md"))
+              if not md:
+                  bad.append(f"{p}: 找不到章节"); continue
+              t = md[0].read_text(encoding="utf-8")
+              if t.count("\n## 目录") != 1: bad.append(f"{p}: `## 目录` 数量不对")
+              if t.count("\n## 练习题") != 1: bad.append(f"{p}: `## 练习题` 数量不对")
+              if "> **参考答案**：" not in t: bad.append(f"{p}: 缺行内参考答案")
+              if "\n## 参考答案" in t: bad.append(f"{p}: 不该有 `## 参考答案` 标题")
+              if t.startswith("---\n"): bad.append(f"{p}: 不该有 YAML frontmatter")
+          if bad:
+              print("\n".join(bad)); sys.exit(1)
+          print("✓ 06-10 结构齐")
+          PY
+
+      # Makefile 的契约：`main` 必须包含 cascade/confidence 且 figures 在其后，
+      # 否则新克隆时图会比源报告旧；`sync` 必须装上 quantize 依赖组。
+      - name: 检查 Makefile 契约
+        run: |
+          python3 - <<'PY'
+          import pathlib, sys
+          t = pathlib.Path("minimal-decision-bench/Makefile").read_text(encoding="utf-8")
+          bad = []
+          line = next((l for l in t.splitlines() if l.startswith("main:")), "")
+          if not line:
+              bad.append("main 目标缺失")
+          else:
+              for need in ("cascade", "confidence", "figures"):
+                  if need not in line: bad.append(f"main 目标缺 {need}")
+              if line.index("figures") < line.index("confidence"):
+                  bad.append("figures 必须排在 confidence 之后")
+          if "--group quantize" not in t:
+              bad.append("sync 目标没有装 quantize 依赖组")
+          if bad:
+              print("\n".join(bad)); sys.exit(1)
+          print("✓ Makefile 契约")
+          PY
+
+      # 统计口径一致性：Holm 之后**没有任何指标**存活、NB 校正的 std 必须是
+      # ddof=1（用 ddof=0 会让 escalation Brier 翻案）、多种子报告必须用
+      # 描述性标志名而不是显著性判定。
+      - name: 检查统计口径一致性
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, re, sys
+          p = pathlib.Path("minimal-decision-bench/reports/gap_stats.json")
+          if not p.exists():
+              print("缺少 gap_stats.json"); sys.exit(1)
+          d = json.loads(p.read_text(encoding="utf-8"))
+          bad = []
+          if d.get("caliber") != "cross_validation": bad.append("gap_stats 口径不对")
+          if d["significance_policy"]["survivors"] != []: bad.append("不应有指标在 Holm 后存活")
+          if d["significance_policy"]["std_ddof_for_nadeau_bengio"] != 1:
+              bad.append("NB 校正的 std 必须是 ddof=1")
+          ms = pathlib.Path("minimal-decision-bench/reports/multiseed_report.json")
+          if ms.exists():
+              m = json.loads(ms.read_text(encoding="utf-8"))
+              for k, g in list(m["gaps_vs_rules"].items()) + list(m["gap_encoder_vs_qwen"].items()):
+                  if "descriptive_separated" not in g: bad.append(f"{k}: 缺 descriptive_separated")
+                  if "separated" in g: bad.append(f"{k}: 仍有过时的 separated 字段")
+          src = pathlib.Path("minimal-decision-bench/scripts/07_aggregate_multiseed.py").read_text(encoding="utf-8")
+          if re.search(r'"显著"|\'显著\'|显著\s*(if|else)', src):
+              bad.append("07 脚本的文案里还有把比值说成「显著」的措辞")
+          if bad:
+              print("\n".join(bad)); sys.exit(1)
+          print("✓ 口径一致")
+          PY
+
+      # 文档里不得再出现「Holm 后显著」这类过度断言。
+      - name: 检查文档无统计过度断言
+        run: |
+          python3 - <<'PY'
+          import pathlib, sys
+          bad = []
+          for p in sorted(pathlib.Path(".").glob("[0-9][0-9]-*.md")) + [pathlib.Path("README.md")]:
+              if not p.exists(): continue
+              t = p.read_text(encoding="utf-8")
+              for phrase in ("Holm 后显著", "Holm 校正后显著"):
+                  if phrase in t: bad.append(f"{p.name}: 出现「{phrase}」")
+          if bad:
+              print("\n".join(bad)); sys.exit(1)
+          print("✓ 无过度断言")
+          PY
 
       # .gitignore 拦不住「写进代码里的密钥」；而密钥一旦进历史，删文件也没用。
       - name: 扫描凭据（含提交历史）

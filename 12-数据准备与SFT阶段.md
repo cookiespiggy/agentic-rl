@@ -297,14 +297,14 @@ bash examples/sft/gsm8k/run_qwen2_5_0_5b_fsdp.sh
 
 | 参数 | 推荐值 | 说明 |
 |------|--------|------|
-| learning_rate | 1e-5 ~ 5e-5 | SFT 学习率 |
+| learning_rate | 5e-5 | SFT 学习率（数据量大时可下调到 1e-5） |
 | epochs | 5 | 训练轮数 |
 | batch_size | 4-8 | 批大小 |
 | max_seq_length | 4096-8192 | 最大序列长度 |
 | warmup_ratio | 0.05 | 预热比例 |
 | weight_decay | 0.01 | 权重衰减 |
 
-> **学习率与轮数（全书统一口径）**：SFT 用 **1e-5 ~ 5e-5**、**5 个 epoch**；GRPO 用 **1e-6**、**3 个 epoch**。
+> **学习率与轮数（全书统一口径）**：SFT 用 **5e-5**（数据量大时可下调到 **1e-5**）、**5 个 epoch**；GRPO 用 **1e-6**、**3 个 epoch**。
 > 本仓库的 `minimal-verl/` 示例取的是 **5e-5**，理由是它的数据集很小（几百条）+ 模型只有 0.5B，需要更大的步长才能在少数几个 epoch 内收敛；**数据量一大就要往下调**（1e-5 更稳）。反过来说，SFT 阶段的学习率比 GRPO 高两个数量级不是笔误——RL 阶段动的是策略本身，步子必须小。
 > verl 的 GRPO 学习率记得显式写：`actor_rollout_ref.actor.optim.lr=1e-6`（见 [11 - 训练框架选型与搭建](./11-训练框架选型与搭建.md)）。
 

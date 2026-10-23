@@ -294,7 +294,8 @@ def compute_grpo_loss(policy, policy_old, reference, reward_function, prompts, n
 | `beta (β)` | 0.01~0.1 | KL 惩罚系数（DAPO 直接置 0） |
 | `learning_rate` | 1e-6 ~ 5e-7 | 学习率（小模型可用大一点） |
 | `temperature` | 0.8~1.0 | 生成温度（控制探索） |
-| `max_new_tokens` | 512~2048 | 最大生成长度 |
+| `max_new_tokens`（TRL / transformers）| 512~2048 | 最大生成长度 |
+| `response_length`（**verl**）| 512~2048 | 同一个东西，verl 的键名不同 |
 
 ---
 

@@ -61,6 +61,7 @@ def _load_script(name: str):
 def main() -> None:
     args = parse_args()
     drift: list[str] = []
+    skipped: list[str] = []
 
     for md_name, (script_name, json_name) in TARGETS.items():
         md_path = ROOT / "inference" / md_name
@@ -69,7 +70,13 @@ def main() -> None:
             print(f"[skip] 缺少 reports/{json_name}")
             continue
         report = json.loads(json_path.read_text(encoding="utf-8"))
-        module = _load_script(script_name)
+        try:
+            module = _load_script(script_name)
+        except ImportError as exc:  # 缺 torch / onnx 等可选依赖
+            skipped.append(f"{md_name}（{script_name} 依赖缺失：{exc}）")
+            if args.check:
+                print(f"[skip] inference/{md_name}（{exc}）")
+            continue
         rendered = module._to_markdown(report)
 
         if args.check:
@@ -85,6 +92,8 @@ def main() -> None:
         md_path.write_text(rendered, encoding="utf-8")
         print(f"[write] inference/{md_name}（源：reports/{json_name}）")
 
+    if skipped and not args.check:
+        print(f"（跳过 {len(skipped)} 个：依赖缺失）")
     if args.check and drift:
         print(f"\n{len(drift)} 个 inference 文档与源报告不一致，跑："
               f"python scripts/14_render_inference_docs.py")

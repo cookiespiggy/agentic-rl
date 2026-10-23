@@ -42,6 +42,7 @@ run "9. inference 文档重渲染"     "$B" uv run python scripts/14_render_infe
 run "11. 小节编号唯一且连续"      "."  python3 tools/check_heading_numbers.py
 run "13. verl 必填参数 + config"  "."  python3 tools/check_verl_configs.py
 run "14. 章节 Python 代码块"      "."  python3 tools/check_chapter_python.py
+run "22. minimal-verl 测试"       "minimal-verl" python3 -m unittest discover -s tests
 
 echo ""
 echo "─── 10. 报告已入库 ───"
