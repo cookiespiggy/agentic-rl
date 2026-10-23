@@ -1,0 +1,321 @@
+{
+  "seeds": [
+    42,
+    43,
+    44
+  ],
+  "note": "n 很小，不做显著性检验；只看差距是否大于种子波动。规则基线是确定性的，std 恒为 0。⚠️ 这是**单次切分**口径：test 只有 24 条模板，分支间细微差距不可信。主口径请看 reports/cross_validation.json（5 折交叉验证），单次切分曾给出过与交叉验证方向相反的结论。",
+  "primary_caliber": "reports/cross_validation.json",
+  "branches": {
+    "encoder": {
+      "intent.f1_macro": {
+        "mean": 0.7891,
+        "std": 0.0345,
+        "n": 3,
+        "values": [
+          0.7404,
+          0.8162,
+          0.8106
+        ]
+      },
+      "intent.ece_top_confidence": {
+        "mean": 0.1134,
+        "std": 0.0216,
+        "n": 3,
+        "values": [
+          0.1417,
+          0.0894,
+          0.1092
+        ]
+      },
+      "needs_escalation.f1": {
+        "mean": 0.838,
+        "std": 0.0226,
+        "n": 3,
+        "values": [
+          0.8642,
+          0.809,
+          0.8409
+        ]
+      },
+      "needs_escalation.brier": {
+        "mean": 0.1121,
+        "std": 0.0095,
+        "n": 3,
+        "values": [
+          0.103,
+          0.1252,
+          0.1081
+        ]
+      },
+      "complexity.mae": {
+        "mean": 0.1221,
+        "std": 0.0067,
+        "n": 3,
+        "values": [
+          0.1303,
+          0.1138,
+          0.1222
+        ]
+      }
+    },
+    "qwen_lora": {
+      "intent.f1_macro": {
+        "mean": 0.8229,
+        "std": 0.0068,
+        "n": 3,
+        "values": [
+          0.8144,
+          0.831,
+          0.8234
+        ]
+      },
+      "intent.ece_top_confidence": {
+        "mean": 0.1146,
+        "std": 0.0264,
+        "n": 3,
+        "values": [
+          0.0815,
+          0.146,
+          0.1164
+        ]
+      },
+      "needs_escalation.f1": {
+        "mean": 0.8055,
+        "std": 0.0236,
+        "n": 3,
+        "values": [
+          0.8293,
+          0.814,
+          0.7733
+        ]
+      },
+      "needs_escalation.brier": {
+        "mean": 0.1273,
+        "std": 0.0044,
+        "n": 3,
+        "values": [
+          0.1233,
+          0.1335,
+          0.1252
+        ]
+      },
+      "complexity.mae": {
+        "mean": 0.1941,
+        "std": 0.0251,
+        "n": 3,
+        "values": [
+          0.1594,
+          0.2182,
+          0.2047
+        ]
+      }
+    },
+    "rules": {
+      "intent.f1_macro": {
+        "mean": 0.6142,
+        "std": 0.0,
+        "n": 3,
+        "values": [
+          0.6142,
+          0.6142,
+          0.6142
+        ]
+      },
+      "intent.ece_top_confidence": {
+        "mean": 0.2438,
+        "std": 0.0,
+        "n": 3,
+        "values": [
+          0.2438,
+          0.2438,
+          0.2438
+        ]
+      },
+      "needs_escalation.f1": {
+        "mean": 0.7045,
+        "std": 0.0,
+        "n": 3,
+        "values": [
+          0.7045,
+          0.7045,
+          0.7045
+        ]
+      },
+      "needs_escalation.brier": {
+        "mean": 0.2267,
+        "std": 0.0,
+        "n": 3,
+        "values": [
+          0.2267,
+          0.2267,
+          0.2267
+        ]
+      },
+      "complexity.mae": {
+        "mean": 0.1587,
+        "std": 0.0,
+        "n": 3,
+        "values": [
+          0.1587,
+          0.1587,
+          0.1587
+        ]
+      }
+    }
+  },
+  "gaps_vs_rules": {
+    "encoder|intent.f1_macro": {
+      "left_mean": 0.7891,
+      "right_mean": 0.6142,
+      "gap_left_minus_right": 0.1749,
+      "pooled_std": 0.0244,
+      "gap_over_pooled_std": 7.17,
+      "descriptive_separated": true,
+      "better_side": "left",
+      "lower_is_better": false
+    },
+    "qwen_lora|intent.f1_macro": {
+      "left_mean": 0.8229,
+      "right_mean": 0.6142,
+      "gap_left_minus_right": 0.2087,
+      "pooled_std": 0.0048,
+      "gap_over_pooled_std": 43.4,
+      "descriptive_separated": true,
+      "better_side": "left",
+      "lower_is_better": false
+    },
+    "encoder|intent.ece_top_confidence": {
+      "left_mean": 0.1134,
+      "right_mean": 0.2438,
+      "gap_left_minus_right": -0.1304,
+      "pooled_std": 0.0153,
+      "gap_over_pooled_std": 8.54,
+      "descriptive_separated": true,
+      "better_side": "left",
+      "lower_is_better": true
+    },
+    "qwen_lora|intent.ece_top_confidence": {
+      "left_mean": 0.1146,
+      "right_mean": 0.2438,
+      "gap_left_minus_right": -0.1292,
+      "pooled_std": 0.0187,
+      "gap_over_pooled_std": 6.92,
+      "descriptive_separated": true,
+      "better_side": "left",
+      "lower_is_better": true
+    },
+    "encoder|needs_escalation.f1": {
+      "left_mean": 0.838,
+      "right_mean": 0.7045,
+      "gap_left_minus_right": 0.1335,
+      "pooled_std": 0.016,
+      "gap_over_pooled_std": 8.35,
+      "descriptive_separated": true,
+      "better_side": "left",
+      "lower_is_better": false
+    },
+    "qwen_lora|needs_escalation.f1": {
+      "left_mean": 0.8055,
+      "right_mean": 0.7045,
+      "gap_left_minus_right": 0.101,
+      "pooled_std": 0.0167,
+      "gap_over_pooled_std": 6.05,
+      "descriptive_separated": true,
+      "better_side": "left",
+      "lower_is_better": false
+    },
+    "encoder|needs_escalation.brier": {
+      "left_mean": 0.1121,
+      "right_mean": 0.2267,
+      "gap_left_minus_right": -0.1146,
+      "pooled_std": 0.0067,
+      "gap_over_pooled_std": 17.06,
+      "descriptive_separated": true,
+      "better_side": "left",
+      "lower_is_better": true
+    },
+    "qwen_lora|needs_escalation.brier": {
+      "left_mean": 0.1273,
+      "right_mean": 0.2267,
+      "gap_left_minus_right": -0.0994,
+      "pooled_std": 0.0031,
+      "gap_over_pooled_std": 31.95,
+      "descriptive_separated": true,
+      "better_side": "left",
+      "lower_is_better": true
+    },
+    "encoder|complexity.mae": {
+      "left_mean": 0.1221,
+      "right_mean": 0.1587,
+      "gap_left_minus_right": -0.0366,
+      "pooled_std": 0.0047,
+      "gap_over_pooled_std": 7.73,
+      "descriptive_separated": true,
+      "better_side": "left",
+      "lower_is_better": true
+    },
+    "qwen_lora|complexity.mae": {
+      "left_mean": 0.1941,
+      "right_mean": 0.1587,
+      "gap_left_minus_right": 0.0354,
+      "pooled_std": 0.0177,
+      "gap_over_pooled_std": 1.99,
+      "descriptive_separated": true,
+      "better_side": "right",
+      "lower_is_better": true
+    }
+  },
+  "gap_encoder_vs_qwen": {
+    "intent.f1_macro": {
+      "left_mean": 0.7891,
+      "right_mean": 0.8229,
+      "gap_left_minus_right": -0.0338,
+      "pooled_std": 0.0249,
+      "gap_over_pooled_std": 1.36,
+      "descriptive_separated": true,
+      "better_side": "right",
+      "lower_is_better": false
+    },
+    "intent.ece_top_confidence": {
+      "left_mean": 0.1134,
+      "right_mean": 0.1146,
+      "gap_left_minus_right": -0.0012,
+      "pooled_std": 0.0241,
+      "gap_over_pooled_std": 0.05,
+      "descriptive_separated": false,
+      "better_side": "left",
+      "lower_is_better": true
+    },
+    "needs_escalation.f1": {
+      "left_mean": 0.838,
+      "right_mean": 0.8055,
+      "gap_left_minus_right": 0.0325,
+      "pooled_std": 0.0231,
+      "gap_over_pooled_std": 1.41,
+      "descriptive_separated": true,
+      "better_side": "left",
+      "lower_is_better": false
+    },
+    "needs_escalation.brier": {
+      "left_mean": 0.1121,
+      "right_mean": 0.1273,
+      "gap_left_minus_right": -0.0152,
+      "pooled_std": 0.0074,
+      "gap_over_pooled_std": 2.05,
+      "descriptive_separated": true,
+      "better_side": "left",
+      "lower_is_better": true
+    },
+    "complexity.mae": {
+      "left_mean": 0.1221,
+      "right_mean": 0.1941,
+      "gap_left_minus_right": -0.072,
+      "pooled_std": 0.0184,
+      "gap_over_pooled_std": 3.92,
+      "descriptive_separated": true,
+      "better_side": "left",
+      "lower_is_better": true
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "branch": "qwen3.5-0.8b-base-lora",
+  "run_tag": "_s43",
+  "seed": 43,
+  "model_path": "/Users/jimmy/.cache/modelscope/models/Qwen--Qwen3.5-0.8B-Base/snapshots/master",
+  "hparams": {
+    "lr": 0.0001,
+    "warmup_ratio": 0.1,
+    "grad_accum": 4,
+    "scheduler": "cosine",
+    "epochs": 2,
+    "batch_size": 1
+  },
+  "samples": {
+    "train": 288,
+    "dev": 96,
+    "test": 96
+  },
+  "intent": {
+    "accuracy": 0.8333333333333334,
+    "f1_macro": 0.830952380952381,
+    "ece_top_confidence": 0.14596304421623557,
+    "mean_confidence": 0.9792963775495688
+  },
+  "needs_escalation": {
+    "accuracy": 0.8333333333333334,
+    "f1": 0.813953488372093,
+    "brier": 0.13349961452188855
+  },
+  "complexity": {
+    "mae": 0.21820429920000026
+  }
+}

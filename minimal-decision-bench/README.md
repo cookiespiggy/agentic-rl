@@ -25,7 +25,7 @@
 | 29 数据工程 II | `scripts/03_compare_and_route.py`, `reports/comparison_report.json` |
 | 30 模型骨架 | `src/minimal_decision_bench/trainers.py`, `scripts/01_train_encoder.py` |
 | 31 训练与校准 | `src/minimal_decision_bench/metrics.py`, `reports/*_metrics.json` |
-| 32 推理优化 | `src/minimal_decision_bench/routing.py` |
+| 32 推理优化 | `scripts/06_benchmark_latency.py`, `scripts/10_quantize_benchmark.py` |
 | 33 上线治理 | `reports/comparison_report.json`（治理输入样例） |
 
 ---
@@ -47,13 +47,17 @@ minimal-decision-bench/
 │   ├── 09_make_figures.py        # 生成教程用图表到 ../assets/
 │   ├── 10_quantize_benchmark.py  # 量化与 ONNX 推理基准（32 章）
 │   ├── 11_cascade_benchmark.py   # 分流与级联基准（31/33 章）
-│   └── 12_confidence_diagnosis.py # 置信度能否定位错误（31 章）
+│   ├── 12_confidence_diagnosis.py # 置信度能否定位错误（31 章）
+│   ├── 13_gap_stats.py          # 描述性比值 + 三层显著性检验（纯后处理）
+│   └── 14_render_inference_docs.py # 从已入库 json 重渲染 inference/*.md
 ├── src/minimal_decision_bench/
 │   ├── schema.py               # schema 解析与校验
 │   ├── data_builder.py         # 样本构造、难度分层与防泄漏切分
 │   ├── rules.py                # 关键词规则基线 rules_v0（29 章的下界）
 │   ├── trainers.py             # 训练、推理、LoRA 目标模块识别
 │   ├── metrics.py              # F1/ECE/Brier/MAE 等指标
+│   ├── selective.py            # 选择性预测：置信度能否定位错误（AUROC/AURC）
+│   ├── io_utils.py             # json / jsonl 读写
 │   └── routing.py              # cheap/mid/premium 路由规则
 ├── schemas/v1.json             # 判别任务契约（含多诉求标注协议）
 └── reports/*.json              # 最终报告（你要看的结果）
@@ -134,11 +138,19 @@ uv run python scripts/07_aggregate_multiseed.py --seeds 42,43,44
 uv run python scripts/08_cross_validate.py --folds 5
 uv run python scripts/08_cross_validate.py --folds 5 --report-only   # 只重算聚合
 
-# 8) 生成教程图表
+# 8) 差距统计（描述性比值 + 三层显著性检验；纯后处理，不需要重训）
+uv run python scripts/13_gap_stats.py
+
+# 9) 从已入库的 reports/*.json 重渲染 inference/*.md（不重跑基准）
+uv run python scripts/14_render_inference_docs.py
+
+# 10) 生成教程图表
 uv run python scripts/09_make_figures.py
 ```
 
-> **为什么需要交叉验证**：单次切分下 test 只有 24 条模板 / 96 条样本，encoder 的 F1 标准差 0.034，叠加 MPS 非确定性后噪声更大——分支间的细微差距（例如 encoder 与 Qwen 的 intent F1 只差 0.034）根本无法判定。K 折让每条模板都被评测一次，等效样本量翻 K 倍，而且不需要新写一条模板。跑完约 40 分钟（主要是 LoRA 训练），中途每折落盘，可中断续跑。
+> **为什么需要交叉验证**：单次切分下 test 只有 24 条模板 / 96 条样本，encoder 的 F1 标准差 0.034，叠加 MPS 非确定性后噪声更大——分支间的细微差距（例如 encoder 与 Qwen 的 intent F1 只差 0.034）根本无法判定。K 折让每条模板都被评测一次，在**模板层面**等效样本量翻 K 倍，而且不需要新写一条模板。跑完约 40 分钟（主要是 LoRA 训练），中途每折落盘，可中断续跑。
+>
+> ⚠️ **「等效样本量翻 K 倍」只在模板层面成立**：pooled 的 480 条样本来自 120 个模板 × 4 个固定后缀变体，后缀变体之间高度相似。所以做统计推断（置信区间、bootstrap）时应该按 **120 个模板做 cluster bootstrap**，而不是把 480 当成 480 个独立样本。
 
 调优与口径相关的公共参数（两个训练脚本一致，便于做公平对比）：
 
@@ -196,15 +208,31 @@ uv run python scripts/02_train_qwen_lora.py \
 | escalation Brier | **0.1002** | 0.1138 | 0.2483 |
 | complexity MAE | **0.1281** | 0.1536 | 0.1670 |
 
-按折统计与分支差距（`gap / 合并标准差`）：
+按折统计与分支差距。最后一列是**描述性比值** `|Δ均值| / 合并标准差`
+（口径：**总体标准差 ddof=0**，来自 `summary.per_fold` 里已四舍五入的 mean/std）——
+它衡量「差距是波动的多少倍」，**不是显著性检验**：
 
 | 指标 | encoder | Qwen LoRA | encoder vs Qwen |
 |---|---|---|---|
-| intent F1 | 0.9063 ± 0.0304 | 0.8946 ± 0.0405 | +0.012 / **0.33（不显著）** |
-| intent ECE | 0.0721 ± 0.0264 | 0.0787 ± 0.0460 | −0.007 / 0.18（不显著） |
-| escalation F1 | 0.8406 ± 0.0326 | 0.8422 ± 0.0253 | −0.002 / 0.05（不显著） |
-| escalation Brier | 0.1002 ± 0.0213 | 0.1138 ± 0.0205 | −0.014 / 0.65（不显著） |
-| complexity MAE | 0.1281 ± 0.0095 | 0.1536 ± 0.0166 | −0.026 / **1.89（encoder 更优）** |
+| intent F1 | 0.9063 ± 0.0304 | 0.8946 ± 0.0405 | +0.012 / 描述性比值 0.33 |
+| intent ECE | 0.0721 ± 0.0264 | 0.0787 ± 0.0460 | −0.007 / 描述性比值 0.18 |
+| escalation F1 | 0.8406 ± 0.0326 | 0.8422 ± 0.0253 | −0.002 / 描述性比值 0.05 |
+| escalation Brier | 0.1002 ± 0.0213 | 0.1138 ± 0.0205 | −0.014 / 描述性比值 0.65 |
+| complexity MAE | 0.1281 ± 0.0095 | 0.1536 ± 0.0166 | −0.026 / 描述性比值 1.89 |
+
+**显著性检验的结论**（`reports/gap_stats.json`，由 `scripts/13_gap_stats.py` 产出）：
+
+| 指标 | 朴素配对 t | p | 依赖校正 t | p | 精确 Wilcoxon p | encoder 更优的折数 |
+|---|---|---|---|---|---|---|
+| intent F1 | +1.331 | 0.2541 | +0.887 | 0.4252 | 0.3125 | 3/5 |
+| intent ECE | −0.550 | 0.6116 | −0.367 | 0.7325 | 0.8125 | 3/5 |
+| escalation F1 | −0.282 | 0.7917 | −0.188 | 0.8599 | 0.8750 | 1/5 |
+| **escalation Brier** | **−6.777** | **0.0025** | **−4.518** | **0.0107** | **0.0625** | **5/5** |
+| complexity MAE | −2.935 | 0.0426 | −1.957 | 0.1220 | 0.1250 | 4/5 |
+
+> **为什么要有「依赖校正」这一层**：5 折交叉验证的**折之间不独立**——每折都在同一批 120 个模板上训 4/5，测试集虽不相交但训练集高度重叠。所以朴素配对 t 会高估显著性。校正用 Nadeau–Bengio 公式 `SE = s·√(1/n + n_test/n_train)`（5 折下 `n_test/n_train = 1/4`），其中 `s` 取**样本标准差 ddof=1**（用 ddof=0 会让 escalation Brier 翻案存活）。再用精确 Wilcoxon 做一次假设最少的交叉验证——n=5 时它能达到的最小双侧 p 是 `2/32 = 0.0625 > 0.05`。
+>
+> **结论**：5 个指标上，encoder 与 Qwen 的差异**没有一个**在依赖校正 + Holm 校正后达到显著性门槛。其中 **escalation Brier 的差异方向在 5/5 折上完全一致**（encoder 更优，幅度约 12%），朴素配对 t p=0.0025，但校正后 p=0.0107、Wilcoxon p=0.0625——**定性为「值得注意但未证实」，不宣称统计显著**。
 
 **`complexity` 的 MAE 要对齐下限而不是 0**（`reports/complexity_floor.json`）。它的标签由 `(intent, 升级关键词, 文本哈希)` 生成，哈希部分不可学：
 
@@ -214,7 +242,12 @@ uv run python scripts/02_train_qwen_lora.py \
 | 只知道 intent | 0.1147 |
 | 知道 intent + 关键词（**不可约下限**） | **0.0982** |
 
-所以 encoder 的 `0.1281` 距下限只有 `+0.030`，Qwen 是 `+0.055`。**71% 的可学信号只是 intent**——`complexity` 不是独立能力，它的价值在演示「一个 encoder 服务三种输出头」与「标签有不可约噪声时指标要对齐下限」。
+所以 encoder 的 `0.1281` 距下限只有 `+0.030`，Qwen 是 `+0.055`。**71% 的可学信号只是 intent**——`complexity` 不是独立能力，它的价值在演示「同一个 encoder recipe 训三个单头模型」与「标签有不可约噪声时指标要对齐下限」。
+
+> ⚠️ **本工程的实际实现是三个独立的单头模型，不是「一个 encoder 服务三种输出头」**。
+> `scripts/08_cross_validate.py` 对 `train_task()` 调用三次（`num_labels` / `label_key` / `is_regression` 各不相同），
+> 磁盘上 `artifacts/encoder/{intent,escalation,complexity}` 各约 391 MB，合计约 1.1 GB。
+> 「多头共享 encoder」是第 30 章提出的**架构蓝图**，本工程**没有实现**它。
 
 ### 难例剖面（50 条，11 类失败模式）
 
@@ -274,16 +307,21 @@ uv run python scripts/02_train_qwen_lora.py \
 
 | 指标 | encoder-only | Qwen LoRA | 关键词规则 |
 |---|---|---|---|
-| 端到端 P50 | 20.67 ms | 142.51 ms | **0.0045 ms** |
+| 端到端 P50（三模型串行求和） | 20.67 ms | 142.51 ms | **0.0045 ms** |
 | 相对规则的倍数 | 4593x | 31669x | 1x |
 | intent 批 32 QPS | 1114.2 | 24.6 | **380762** |
-| 部署体积（含底座） | 390.6 MB | 1728.1 MB | 0（无需模型） |
+| 部署体积（**单任务模型**，含底座） | 390.6 MB | 1728.1 MB | 0（无需模型） |
+| 部署体积（**三任务合计**） | 1171.8 MB | 5184.3 MB | 0 |
+
+> **口径提示**：延迟列是**三个任务模型串行求和**（`intent` + `escalation` + `complexity`），
+> 体积列是**单个任务模型**的体积——因为体积不会因为串行而叠加。两列的粒度不同，
+> 已在表里分别标注；三任务合计那一行才是「部署一个完整判别服务」的真实体积。
 
 **三条结论：**
 
-1. **模型确实比规则好，且提升显著。** 五个质量指标上，两条模型相对规则的差距都是 **5~9 倍标准差**（唯一例外：Qwen 的 complexity MAE 只有 1.08 倍）。**先把这条立住，再谈模型选型。**
-2. **两条模型路线彼此分不出高下。** 除 complexity MAE（encoder 更优，比值 1.89）外，intent F1 / ECE / escalation F1 / Brier 四项的差距都远小于 1 倍标准差。**所以选 encoder 的理由是成本低 7 倍，不是质量更高。**
-3. **成本跨五个数量级。** 规则快 encoder 约 4600 倍、快 Qwen 约 32000 倍。所以真正的问题不是「encoder 还是 LLM」，而是「模型相对规则提升的那点 F1，值不值 4600 倍延迟」。
+1. **模型相对规则有明显优势。** 五个质量指标上，两条模型相对规则的差距都是 **5~9 倍标准差**（唯一例外：Qwen 的 complexity MAE 只有 1.08 倍）。注意这是**描述性比值**（总体标准差 ddof=0 口径），衡量「差距是波动的多少倍」，**不是显著性检验**。**先把这条立住，再谈模型选型。**
+2. **两条模型路线在质量上分不出高下。** 显著性检验（依赖校正 + Holm）下**没有任何指标达到门槛**；escalation Brier 的差异方向 5/5 折一致、幅度约 12%，但**未证实**。**所以选 encoder 的理由是成本低 7 倍，不是质量更高。**
+3. **成本跨约 4.5 个数量级。** 规则快 encoder 约 4600 倍、快 Qwen 约 32000 倍（31,669×）。所以真正的问题不是「encoder 还是 LLM」，而是「模型相对规则提升的那点 F1，值不值 4600 倍延迟」。
 
 ### 单次切分 vs 交叉验证
 
@@ -292,7 +330,7 @@ uv run python scripts/02_train_qwen_lora.py \
 | 口径 | encoder | Qwen LoRA | 结论 |
 |---|---|---|---|
 | 单次切分 intent F1 | 0.7891 ± 0.0345 | **0.8229 ± 0.0068** | Qwen 领先 0.034 |
-| 5 折 CV intent F1 | **0.9063 ± 0.0304** | 0.8946 ± 0.0405 | 差 0.012，**不显著** |
+| 5 折 CV intent F1 | **0.9063 ± 0.0304** | 0.8946 ± 0.0405 | 差 0.012，描述性比值 0.33 |
 
 单次切分只有 72 条模板用于训练、24 条用于评测；交叉验证每折用 96 条训练，且 120 条模板**全部**被评测。前者不仅噪声大，还会把结论指向错误方向。
 

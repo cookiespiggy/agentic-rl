@@ -1,0 +1,33 @@
+{
+  "branch": "encoder-only",
+  "run_tag": "",
+  "seed": 42,
+  "model_path": "/Users/jimmy/.cache/modelscope/models/hfl--chinese-macbert-base/snapshots/master",
+  "hparams": {
+    "lr": 5e-05,
+    "warmup_ratio": 0.0,
+    "grad_accum": 1,
+    "scheduler": "linear",
+    "epochs": 2,
+    "batch_size": 8
+  },
+  "samples": {
+    "train": 288,
+    "dev": 96,
+    "test": 96
+  },
+  "intent": {
+    "accuracy": 0.7395833333333334,
+    "f1_macro": 0.7404375804375805,
+    "ece_top_confidence": 0.1416770111148556,
+    "mean_confidence": 0.8812603444481889
+  },
+  "needs_escalation": {
+    "accuracy": 0.8854166666666666,
+    "f1": 0.8641975308641975,
+    "brier": 0.102978861707352
+  },
+  "complexity": {
+    "mae": 0.13028181441649794
+  }
+}

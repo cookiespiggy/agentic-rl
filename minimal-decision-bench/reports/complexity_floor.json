@@ -1,0 +1,7 @@
+{
+  "n": 480,
+  "random_guess_mae": 0.186,
+  "intent_only_mae": 0.1147,
+  "oracle_mae": 0.0982,
+  "note": "oracle 是已知真实 intent 与升级关键词时的最优预测；complexity 的可学成分主要来自 intent，它不是独立能力"
+}

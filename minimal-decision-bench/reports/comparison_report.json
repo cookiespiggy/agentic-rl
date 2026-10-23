@@ -1,0 +1,150 @@
+{
+  "comparison": {
+    "intent_f1_macro": {
+      "encoder": 0.7404375804375805,
+      "qwen_lora": 0.8143877802414387,
+      "rules": 0.6142357642357642
+    },
+    "intent_ece": {
+      "encoder": 0.1416770111148556,
+      "qwen_lora": 0.0814514830708504,
+      "rules": 0.24375000000000002
+    },
+    "escalation_f1": {
+      "encoder": 0.8641975308641975,
+      "qwen_lora": 0.8292682926829268,
+      "rules": 0.7045454545454546
+    },
+    "complexity_mae": {
+      "encoder": 0.13028181441649794,
+      "qwen_lora": 0.15941645264811813,
+      "rules": 0.15870937499999999
+    }
+  },
+  "branches": [
+    "encoder",
+    "qwen_lora",
+    "rules"
+  ],
+  "run_tag": "",
+  "complexity_floor": {
+    "n": 480,
+    "random_guess_mae": 0.186,
+    "intent_only_mae": 0.1147,
+    "oracle_mae": 0.0982,
+    "note": "oracle 是已知真实 intent 与升级关键词时的最优预测；complexity 的可学成分主要来自 intent，它不是独立能力"
+  },
+  "routing_examples_source": "model_predictions",
+  "routing_examples": [
+    {
+      "branch": "encoder",
+      "name": "high_conf_low_risk",
+      "text": "就那个钱的事，你们处理一下。",
+      "intent_confidence": 0.9448,
+      "complexity": 0.4358,
+      "escalation_prob": 0.0913,
+      "tier": "cheap",
+      "reason": "high_conf_low_risk"
+    },
+    {
+      "branch": "encoder",
+      "name": "medium_conf",
+      "text": "点了两次没反应，结果划走两笔钱。 请尽快处理。",
+      "intent_confidence": 0.953,
+      "complexity": 0.6103,
+      "escalation_prob": 0.3885,
+      "tier": "mid",
+      "reason": "medium_conf"
+    },
+    {
+      "branch": "encoder",
+      "name": "high_risk",
+      "text": "升级按钮点不动，帮我升级一下。 影响生产。",
+      "intent_confidence": 0.9488,
+      "complexity": 0.6729,
+      "escalation_prob": 0.9872,
+      "tier": "premium",
+      "reason": "high_risk"
+    },
+    {
+      "branch": "qwen_lora",
+      "name": "high_conf_low_risk",
+      "text": "手机和电脑上的东西会同步吗？ 请尽快处理。",
+      "intent_confidence": 0.999,
+      "complexity": 0.4264,
+      "escalation_prob": 0.1466,
+      "tier": "cheap",
+      "reason": "high_conf_low_risk"
+    },
+    {
+      "branch": "qwen_lora",
+      "name": "medium_conf",
+      "text": "升级按钮点不动，帮我升级一下。",
+      "intent_confidence": 0.9931,
+      "complexity": 0.4595,
+      "escalation_prob": 0.6689,
+      "tier": "mid",
+      "reason": "medium_conf"
+    },
+    {
+      "branch": "qwen_lora",
+      "name": "high_risk",
+      "text": "点进去就转不出来。",
+      "intent_confidence": 0.9999,
+      "complexity": 0.5053,
+      "escalation_prob": 0.9876,
+      "tier": "premium",
+      "reason": "high_risk"
+    },
+    {
+      "branch": "rules",
+      "name": "high_conf_low_risk",
+      "text": "采购要走什么流程，有说明吗？",
+      "intent_confidence": 0.9,
+      "complexity": 0.35,
+      "escalation_prob": 0.1,
+      "tier": "cheap",
+      "reason": "high_conf_low_risk"
+    },
+    {
+      "branch": "rules",
+      "name": "medium_conf",
+      "text": "一直卡在处理中，钱已经扣走了。 比较着急。",
+      "intent_confidence": 0.9,
+      "complexity": 0.5,
+      "escalation_prob": 0.1,
+      "tier": "mid",
+      "reason": "medium_conf"
+    },
+    {
+      "branch": "rules",
+      "name": "high_risk",
+      "text": "团队版页面打不开，介绍下差异。 请尽快处理。",
+      "intent_confidence": 0.9,
+      "complexity": 0.75,
+      "escalation_prob": 0.9,
+      "tier": "premium",
+      "reason": "high_risk"
+    }
+  ],
+  "routing_reason_counts": {
+    "encoder": {
+      "medium_conf": 34,
+      "high_risk": 27,
+      "high_conf_low_risk": 28,
+      "low_conf_fallback": 7
+    },
+    "qwen_lora": {
+      "medium_conf": 24,
+      "high_risk": 43,
+      "low_conf_fallback": 12,
+      "high_conf_low_risk": 17
+    },
+    "rules": {
+      "medium_conf": 28,
+      "high_risk": 48,
+      "high_conf_low_risk": 6,
+      "low_conf_fallback": 14
+    }
+  }
+}

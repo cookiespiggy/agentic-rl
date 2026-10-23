@@ -1,0 +1,535 @@
+{
+  "n_samples": 480,
+  "note": "ECE 衡量「平均校准」，本报告衡量「能否定位错误」。两者不是一回事——一个模型可以 ECE 很好却完全无法定位错误。",
+  "branches": {
+    "encoder": {
+      "n": 480,
+      "base_accuracy": 0.9062,
+      "error_detection_auroc": 0.7608,
+      "aurc": 0.0345,
+      "risk_coverage": [
+        {
+          "coverage": 0.1,
+          "n": 48,
+          "accuracy": 1.0,
+          "risk": 0.0
+        },
+        {
+          "coverage": 0.25,
+          "n": 120,
+          "accuracy": 1.0,
+          "risk": 0.0
+        },
+        {
+          "coverage": 0.5,
+          "n": 240,
+          "accuracy": 0.9667,
+          "risk": 0.0333
+        },
+        {
+          "coverage": 0.75,
+          "n": 360,
+          "accuracy": 0.9417,
+          "risk": 0.0583
+        },
+        {
+          "coverage": 0.9,
+          "n": 432,
+          "accuracy": 0.9213,
+          "risk": 0.0787
+        },
+        {
+          "coverage": 1.0,
+          "n": 480,
+          "accuracy": 0.9062,
+          "risk": 0.0938
+        }
+      ],
+      "confidence_gap": {
+        "n_correct": 435,
+        "n_error": 45,
+        "correct_mean": 0.9554,
+        "error_mean": 0.8836,
+        "gap": 0.0718,
+        "correct_median": 0.9823,
+        "error_median": 0.9337,
+        "error_above_correct_median": 0.1778,
+        "error_max": 0.989
+      },
+      "ece_top_confidence": 0.057,
+      "aurc_vs_base_error": -0.0593
+    },
+    "qwen_lora": {
+      "n": 480,
+      "base_accuracy": 0.8979,
+      "error_detection_auroc": 0.8511,
+      "aurc": 0.0234,
+      "risk_coverage": [
+        {
+          "coverage": 0.1,
+          "n": 48,
+          "accuracy": 1.0,
+          "risk": 0.0
+        },
+        {
+          "coverage": 0.25,
+          "n": 120,
+          "accuracy": 1.0,
+          "risk": 0.0
+        },
+        {
+          "coverage": 0.5,
+          "n": 240,
+          "accuracy": 0.9875,
+          "risk": 0.0125
+        },
+        {
+          "coverage": 0.75,
+          "n": 360,
+          "accuracy": 0.9722,
+          "risk": 0.0278
+        },
+        {
+          "coverage": 0.9,
+          "n": 432,
+          "accuracy": 0.9236,
+          "risk": 0.0764
+        },
+        {
+          "coverage": 1.0,
+          "n": 480,
+          "accuracy": 0.8979,
+          "risk": 0.1021
+        }
+      ],
+      "confidence_gap": {
+        "n_correct": 431,
+        "n_error": 49,
+        "correct_mean": 0.9763,
+        "error_mean": 0.867,
+        "gap": 0.1093,
+        "correct_median": 1.0,
+        "error_median": 0.9762,
+        "error_above_correct_median": 0.0204,
+        "error_max": 1.0
+      },
+      "ece_top_confidence": 0.0746,
+      "aurc_vs_base_error": -0.0787
+    },
+    "rules": {
+      "n": 480,
+      "base_accuracy": 0.5917,
+      "error_detection_auroc": 0.5224,
+      "aurc": 0.4088,
+      "risk_coverage": [
+        {
+          "coverage": 0.1,
+          "n": 48,
+          "accuracy": 0.5625,
+          "risk": 0.4375
+        },
+        {
+          "coverage": 0.25,
+          "n": 120,
+          "accuracy": 0.6,
+          "risk": 0.4
+        },
+        {
+          "coverage": 0.5,
+          "n": 240,
+          "accuracy": 0.6167,
+          "risk": 0.3833
+        },
+        {
+          "coverage": 0.75,
+          "n": 360,
+          "accuracy": 0.6,
+          "risk": 0.4
+        },
+        {
+          "coverage": 0.9,
+          "n": 432,
+          "accuracy": 0.6019,
+          "risk": 0.3981
+        },
+        {
+          "coverage": 1.0,
+          "n": 480,
+          "accuracy": 0.5917,
+          "risk": 0.4083
+        }
+      ],
+      "confidence_gap": {
+        "n_correct": 284,
+        "n_error": 196,
+        "correct_mean": 0.7451,
+        "error_mean": 0.7204,
+        "gap": 0.0247,
+        "correct_median": 0.9,
+        "error_median": 0.9,
+        "error_above_correct_median": 0.0,
+        "error_max": 0.9
+      },
+      "ece_top_confidence": 0.2667,
+      "aurc_vs_base_error": 0.0005
+    }
+  },
+  "per_layer": {
+    "encoder": {
+      "explicit": {
+        "n": 160,
+        "base_accuracy": 0.9187,
+        "error_detection_auroc": 0.7185,
+        "aurc": 0.0346,
+        "risk_coverage": [
+          {
+            "coverage": 0.1,
+            "n": 16,
+            "accuracy": 1.0,
+            "risk": 0.0
+          },
+          {
+            "coverage": 0.25,
+            "n": 40,
+            "accuracy": 1.0,
+            "risk": 0.0
+          },
+          {
+            "coverage": 0.5,
+            "n": 80,
+            "accuracy": 0.95,
+            "risk": 0.05
+          },
+          {
+            "coverage": 0.75,
+            "n": 120,
+            "accuracy": 0.9333,
+            "risk": 0.0667
+          },
+          {
+            "coverage": 0.9,
+            "n": 144,
+            "accuracy": 0.9444,
+            "risk": 0.0556
+          },
+          {
+            "coverage": 1.0,
+            "n": 160,
+            "accuracy": 0.9187,
+            "risk": 0.0813
+          }
+        ],
+        "confidence_gap": {
+          "n_correct": 147,
+          "n_error": 13,
+          "correct_mean": 0.9631,
+          "error_mean": 0.9117,
+          "gap": 0.0513,
+          "correct_median": 0.9808,
+          "error_median": 0.9652,
+          "error_above_correct_median": 0.3077,
+          "error_max": 0.9853
+        },
+        "aurc_vs_base_error": -0.0467
+      },
+      "conflict": {
+        "n": 160,
+        "base_accuracy": 0.8688,
+        "error_detection_auroc": 0.7783,
+        "aurc": 0.0468,
+        "risk_coverage": [
+          {
+            "coverage": 0.1,
+            "n": 16,
+            "accuracy": 1.0,
+            "risk": 0.0
+          },
+          {
+            "coverage": 0.25,
+            "n": 40,
+            "accuracy": 1.0,
+            "risk": 0.0
+          },
+          {
+            "coverage": 0.5,
+            "n": 80,
+            "accuracy": 0.95,
+            "risk": 0.05
+          },
+          {
+            "coverage": 0.75,
+            "n": 120,
+            "accuracy": 0.9333,
+            "risk": 0.0667
+          },
+          {
+            "coverage": 0.9,
+            "n": 144,
+            "accuracy": 0.8889,
+            "risk": 0.1111
+          },
+          {
+            "coverage": 1.0,
+            "n": 160,
+            "accuracy": 0.8688,
+            "risk": 0.1312
+          }
+        ],
+        "confidence_gap": {
+          "n_correct": 139,
+          "n_error": 21,
+          "correct_mean": 0.9529,
+          "error_mean": 0.8593,
+          "gap": 0.0936,
+          "correct_median": 0.9863,
+          "error_median": 0.9169,
+          "error_above_correct_median": 0.1905,
+          "error_max": 0.989
+        },
+        "aurc_vs_base_error": -0.0844
+      },
+      "synonym": {
+        "n": 160,
+        "base_accuracy": 0.9313,
+        "error_detection_auroc": 0.7785,
+        "aurc": 0.0206,
+        "risk_coverage": [
+          {
+            "coverage": 0.1,
+            "n": 16,
+            "accuracy": 1.0,
+            "risk": 0.0
+          },
+          {
+            "coverage": 0.25,
+            "n": 40,
+            "accuracy": 1.0,
+            "risk": 0.0
+          },
+          {
+            "coverage": 0.5,
+            "n": 80,
+            "accuracy": 1.0,
+            "risk": 0.0
+          },
+          {
+            "coverage": 0.75,
+            "n": 120,
+            "accuracy": 0.9583,
+            "risk": 0.0417
+          },
+          {
+            "coverage": 0.9,
+            "n": 144,
+            "accuracy": 0.9375,
+            "risk": 0.0625
+          },
+          {
+            "coverage": 1.0,
+            "n": 160,
+            "accuracy": 0.9313,
+            "risk": 0.0687
+          }
+        ],
+        "confidence_gap": {
+          "n_correct": 149,
+          "n_error": 11,
+          "correct_mean": 0.9503,
+          "error_mean": 0.8968,
+          "gap": 0.0535,
+          "correct_median": 0.9802,
+          "error_median": 0.9337,
+          "error_above_correct_median": 0.0,
+          "error_max": 0.975
+        },
+        "aurc_vs_base_error": -0.0481
+      }
+    },
+    "qwen_lora": {
+      "explicit": {
+        "n": 160,
+        "base_accuracy": 0.925,
+        "error_detection_auroc": 0.8857,
+        "aurc": 0.0124,
+        "risk_coverage": [
+          {
+            "coverage": 0.1,
+            "n": 16,
+            "accuracy": 1.0,
+            "risk": 0.0
+          },
+          {
+            "coverage": 0.25,
+            "n": 40,
+            "accuracy": 1.0,
+            "risk": 0.0
+          },
+          {
+            "coverage": 0.5,
+            "n": 80,
+            "accuracy": 1.0,
+            "risk": 0.0
+          },
+          {
+            "coverage": 0.75,
+            "n": 120,
+            "accuracy": 0.975,
+            "risk": 0.025
+          },
+          {
+            "coverage": 0.9,
+            "n": 144,
+            "accuracy": 0.9514,
+            "risk": 0.0486
+          },
+          {
+            "coverage": 1.0,
+            "n": 160,
+            "accuracy": 0.925,
+            "risk": 0.075
+          }
+        ],
+        "confidence_gap": {
+          "n_correct": 148,
+          "n_error": 12,
+          "correct_mean": 0.9632,
+          "error_mean": 0.7939,
+          "gap": 0.1693,
+          "correct_median": 0.9999,
+          "error_median": 0.9153,
+          "error_above_correct_median": 0.0,
+          "error_max": 0.992
+        },
+        "aurc_vs_base_error": -0.0626
+      },
+      "conflict": {
+        "n": 160,
+        "base_accuracy": 0.8688,
+        "error_detection_auroc": 0.8239,
+        "aurc": 0.0357,
+        "risk_coverage": [
+          {
+            "coverage": 0.1,
+            "n": 16,
+            "accuracy": 1.0,
+            "risk": 0.0
+          },
+          {
+            "coverage": 0.25,
+            "n": 40,
+            "accuracy": 1.0,
+            "risk": 0.0
+          },
+          {
+            "coverage": 0.5,
+            "n": 80,
+            "accuracy": 0.9875,
+            "risk": 0.0125
+          },
+          {
+            "coverage": 0.75,
+            "n": 120,
+            "accuracy": 0.95,
+            "risk": 0.05
+          },
+          {
+            "coverage": 0.9,
+            "n": 144,
+            "accuracy": 0.8889,
+            "risk": 0.1111
+          },
+          {
+            "coverage": 1.0,
+            "n": 160,
+            "accuracy": 0.8688,
+            "risk": 0.1312
+          }
+        ],
+        "confidence_gap": {
+          "n_correct": 139,
+          "n_error": 21,
+          "correct_mean": 0.9782,
+          "error_mean": 0.9259,
+          "gap": 0.0523,
+          "correct_median": 1.0,
+          "error_median": 0.9891,
+          "error_above_correct_median": 0.0,
+          "error_max": 1.0
+        },
+        "aurc_vs_base_error": -0.0955
+      },
+      "synonym": {
+        "n": 160,
+        "base_accuracy": 0.9,
+        "error_detection_auroc": 0.8828,
+        "aurc": 0.019,
+        "risk_coverage": [
+          {
+            "coverage": 0.1,
+            "n": 16,
+            "accuracy": 1.0,
+            "risk": 0.0
+          },
+          {
+            "coverage": 0.25,
+            "n": 40,
+            "accuracy": 1.0,
+            "risk": 0.0
+          },
+          {
+            "coverage": 0.5,
+            "n": 80,
+            "accuracy": 1.0,
+            "risk": 0.0
+          },
+          {
+            "coverage": 0.75,
+            "n": 120,
+            "accuracy": 0.975,
+            "risk": 0.025
+          },
+          {
+            "coverage": 0.9,
+            "n": 144,
+            "accuracy": 0.9375,
+            "risk": 0.0625
+          },
+          {
+            "coverage": 1.0,
+            "n": 160,
+            "accuracy": 0.9,
+            "risk": 0.1
+          }
+        ],
+        "confidence_gap": {
+          "n_correct": 144,
+          "n_error": 16,
+          "correct_mean": 0.9878,
+          "error_mean": 0.8444,
+          "gap": 0.1434,
+          "correct_median": 1.0,
+          "error_median": 0.9733,
+          "error_above_correct_median": 0.0,
+          "error_max": 0.9999
+        },
+        "aurc_vs_base_error": -0.081
+      }
+    }
+  },
+  "verdict": {
+    "ece_best": "encoder",
+    "auroc_best": "qwen_lora",
+    "ece_and_auroc_agree": false,
+    "encoder_auroc": 0.7608,
+    "encoder_auroc_strength": "中等",
+    "encoder_aurc": 0.0345,
+    "encoder_base_error": 0.0938,
+    "aurc_vs_base_error": -0.0593,
+    "gain_at_90pct_coverage": {
+      "encoder": 0.0151,
+      "qwen_lora": 0.0257,
+      "rules": 0.0102
+    },
+    "conclusion": "encoder 的置信度对错误的定位能力是**中等**（AUROC 0.7608，0.5 = 零信息）；AURC 0.0345 低于整体错误率 0.0938（差 -0.0593），说明只服务最自信的 90% 流量时准确率能提 +0.0151。**但 ECE 与 AUROC 排序不一致**：ECE 最好的是 `encoder`（0.057），而定位能力最强的是 `qwen_lora`（AUROC 0.8511）——**校准好不等于能定位错误，ECE 不是充分验收标准。**规则的 AUROC 只有 0.5224（≈ 0.5），因为它的置信度只有两个固定取值，**结构性无法定位错误**——这解释了级联基准（`scripts/11_cascade_benchmark.py`）里 `rule-first` 为什么必然拖累质量。"
+  }
+}

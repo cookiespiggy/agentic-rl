@@ -1,0 +1,18 @@
+{
+  "branch": "rules-v0",
+  "note": "关键词规则基线，置信度为未校准固定值，ECE 必然很差",
+  "intent": {
+    "accuracy": 0.625,
+    "f1_macro": 0.6142357642357642,
+    "ece_top_confidence": 0.24375000000000002,
+    "mean_confidence": 0.7395833333333334
+  },
+  "needs_escalation": {
+    "accuracy": 0.7291666666666666,
+    "f1": 0.7045454545454546,
+    "brier": 0.22666666666666666
+  },
+  "complexity": {
+    "mae": 0.15870937499999999
+  }
+}

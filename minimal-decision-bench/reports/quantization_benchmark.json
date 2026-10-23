@@ -1,0 +1,219 @@
+{
+  "task": "intent",
+  "protocol": {
+    "max_length": 192,
+    "repeats_single": 30,
+    "repeats_batch": 5,
+    "warmup": 3,
+    "batch_sizes": [
+      1,
+      8,
+      32
+    ],
+    "length_buckets": {
+      "p50": 19,
+      "p95": 23
+    },
+    "note": "量化与 ONNX 都是 CPU 侧优化，不能直接与 MPS 基线比；报告分「设备差异」与「同设备形态差异」两组"
+  },
+  "hardware": {
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "machine": "arm64",
+    "torch": "2.14.0",
+    "onnxruntime": "1.30.0"
+  },
+  "variants": {
+    "torch-mps-fp32": {
+      "size_mb": 390.6,
+      "single_request": {
+        "p50": {
+          "repeats": 30,
+          "p50_ms": 6.783,
+          "p95_ms": 7.549,
+          "p99_ms": 7.562,
+          "mean_ms": 6.666
+        },
+        "p95": {
+          "repeats": 30,
+          "p50_ms": 6.523,
+          "p95_ms": 7.626,
+          "p99_ms": 7.785,
+          "mean_ms": 6.598
+        }
+      },
+      "batch_throughput": {
+        "1": {
+          "batch_ms": 6.952,
+          "per_sample_ms": 6.952,
+          "qps": 143.8,
+          "repeats": 5
+        },
+        "8": {
+          "batch_ms": 11.616,
+          "per_sample_ms": 1.452,
+          "qps": 688.7,
+          "repeats": 5
+        },
+        "32": {
+          "batch_ms": 29.589,
+          "per_sample_ms": 0.925,
+          "qps": 1081.5,
+          "repeats": 5
+        }
+      }
+    },
+    "torch-cpu-fp32": {
+      "size_mb": 390.6,
+      "single_request": {
+        "p50": {
+          "repeats": 30,
+          "p50_ms": 11.289,
+          "p95_ms": 11.52,
+          "p99_ms": 11.59,
+          "mean_ms": 11.305
+        },
+        "p95": {
+          "repeats": 30,
+          "p50_ms": 11.368,
+          "p95_ms": 11.663,
+          "p99_ms": 11.775,
+          "mean_ms": 11.385
+        }
+      },
+      "batch_throughput": {
+        "1": {
+          "batch_ms": 11.413,
+          "per_sample_ms": 11.413,
+          "qps": 87.6,
+          "repeats": 5
+        },
+        "8": {
+          "batch_ms": 28.987,
+          "per_sample_ms": 3.623,
+          "qps": 276.0,
+          "repeats": 5
+        },
+        "32": {
+          "batch_ms": 85.893,
+          "per_sample_ms": 2.684,
+          "qps": 372.6,
+          "repeats": 5
+        }
+      }
+    },
+    "onnx-cpu-fp32": {
+      "size_mb": 390.3,
+      "single_request": {
+        "p50": {
+          "repeats": 30,
+          "p50_ms": 5.153,
+          "p95_ms": 5.294,
+          "p99_ms": 5.324,
+          "mean_ms": 5.141
+        },
+        "p95": {
+          "repeats": 30,
+          "p50_ms": 5.318,
+          "p95_ms": 5.568,
+          "p99_ms": 5.587,
+          "mean_ms": 5.334
+        }
+      },
+      "batch_throughput": {
+        "1": {
+          "batch_ms": 5.208,
+          "per_sample_ms": 5.208,
+          "qps": 192.0,
+          "repeats": 5
+        },
+        "8": {
+          "batch_ms": 18.957,
+          "per_sample_ms": 2.37,
+          "qps": 422.0,
+          "repeats": 5
+        },
+        "32": {
+          "batch_ms": 64.787,
+          "per_sample_ms": 2.025,
+          "qps": 493.9,
+          "repeats": 5
+        }
+      }
+    },
+    "onnx-cpu-int8": {
+      "size_mb": 98.3,
+      "agreement": {
+        "n": 96,
+        "argmax_agreement": 0.9375,
+        "max_abs_logit_diff": 2.2743
+      },
+      "single_request": {
+        "p50": {
+          "repeats": 30,
+          "p50_ms": 4.043,
+          "p95_ms": 4.418,
+          "p99_ms": 4.495,
+          "mean_ms": 4.06
+        },
+        "p95": {
+          "repeats": 30,
+          "p50_ms": 4.363,
+          "p95_ms": 4.774,
+          "p99_ms": 4.849,
+          "mean_ms": 4.372
+        }
+      },
+      "batch_throughput": {
+        "1": {
+          "batch_ms": 3.756,
+          "per_sample_ms": 3.756,
+          "qps": 266.3,
+          "repeats": 5
+        },
+        "8": {
+          "batch_ms": 19.985,
+          "per_sample_ms": 2.498,
+          "qps": 400.3,
+          "repeats": 5
+        },
+        "32": {
+          "batch_ms": 72.086,
+          "per_sample_ms": 2.253,
+          "qps": 443.9,
+          "repeats": 5
+        }
+      }
+    }
+  },
+  "unavailable": {
+    "torch-cpu-int8": "RuntimeError: Didn't find engine for operation quantized::linear_prepack NoQEngine"
+  },
+  "comparison": {
+    "note": "量化/ONNX 是 CPU 侧优化，与 MPS 基线不可直接比",
+    "group_a_device": {
+      "torch-mps-fp32_p50_ms": 6.783,
+      "torch-cpu-fp32_p50_ms": 11.289,
+      "mps_speedup_over_cpu": 1.66
+    },
+    "group_b_same_device": {
+      "torch-cpu-fp32": {
+        "p50_ms": 11.289,
+        "batch32_qps": 372.6,
+        "size_mb": 390.6,
+        "speedup_vs_torch_cpu_fp32": 1.0
+      },
+      "onnx-cpu-fp32": {
+        "p50_ms": 5.153,
+        "batch32_qps": 493.9,
+        "size_mb": 390.3,
+        "speedup_vs_torch_cpu_fp32": 2.19
+      },
+      "onnx-cpu-int8": {
+        "p50_ms": 4.043,
+        "batch32_qps": 443.9,
+        "size_mb": 98.3,
+        "speedup_vs_torch_cpu_fp32": 2.79
+      }
+    }
+  }
+}

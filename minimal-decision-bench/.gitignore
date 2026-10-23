@@ -2,6 +2,38 @@
 __pycache__/
 *.pyc
 artifacts/
-reports/
+# 注意：这里必须写 `reports/*` 而不是 `reports/`。
+# git 不会重新包含「被目录级规则排除」的文件——`reports/` + `!reports/x.json`
+# 是**无效**的（git 文档：it is not possible to re-include a file if a parent
+# directory of that file is excluded）。改成 `reports/*` 之后，下面的否定规则才生效。
+reports/*
 data/*.jsonl
 !data/.gitkeep
+
+# ── 入库的报告（文档里所有数字的唯一来源，读者 clone 下来就能核对） ──
+!reports/cross_validation.json
+!reports/gap_stats.json
+!reports/comparison_report.json
+!reports/cascade_benchmark.json
+!reports/confidence_diagnosis.json
+!reports/quantization_benchmark.json
+!reports/hard_cases_report.json
+!reports/latency_benchmark.json
+!reports/multiseed_report.json
+!reports/complexity_floor.json
+!reports/training_logs.json
+!reports/encoder_metrics.json
+!reports/qwen_lora_metrics.json
+!reports/rules_metrics.json
+
+# 多种子的分种子指标文件：各约 4 KB。
+# 07_aggregate_multiseed.py 依赖它们，新克隆无需重训即可复现 multiseed_report.json。
+!reports/encoder_metrics_s42.json
+!reports/encoder_metrics_s43.json
+!reports/encoder_metrics_s44.json
+!reports/qwen_lora_metrics_s42.json
+!reports/qwen_lora_metrics_s43.json
+!reports/qwen_lora_metrics_s44.json
+!reports/rules_metrics_s42.json
+!reports/rules_metrics_s43.json
+!reports/rules_metrics_s44.json

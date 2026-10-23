@@ -1,0 +1,486 @@
+{
+  "protocol": {
+    "max_length": 192,
+    "repeats_single": 30,
+    "repeats_batch": 5,
+    "warmup": 3,
+    "batch_sizes": [
+      1,
+      8,
+      32
+    ],
+    "length_buckets": "test 集 token 长度的 p50 / p95",
+    "device": "mps",
+    "note": "批大小用于近似并发档位；MPS 上无法真并发，跨机器对比前必须核对硬件"
+  },
+  "hardware": {
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "machine": "arm64",
+    "processor": "arm",
+    "python": "3.12.13"
+  },
+  "branches": {
+    "encoder": {
+      "tasks": {
+        "intent": {
+          "length_buckets": {
+            "p50": 19,
+            "p95": 23
+          },
+          "single_request": {
+            "p50": {
+              "repeats": 30,
+              "p50_ms": 6.7587,
+              "p95_ms": 7.3644,
+              "p99_ms": 7.4123,
+              "mean_ms": 6.8245
+            },
+            "p95": {
+              "repeats": 30,
+              "p50_ms": 7.03,
+              "p95_ms": 7.8915,
+              "p99_ms": 8.2762,
+              "mean_ms": 7.0108
+            }
+          },
+          "batch_throughput": {
+            "1": {
+              "batch_ms": 6.826,
+              "per_sample_ms": 6.826,
+              "qps": 146.5,
+              "repeats": 5
+            },
+            "8": {
+              "batch_ms": 10.874,
+              "per_sample_ms": 1.359,
+              "qps": 735.7,
+              "repeats": 5
+            },
+            "32": {
+              "batch_ms": 28.719,
+              "per_sample_ms": 0.897,
+              "qps": 1114.2,
+              "repeats": 5
+            }
+          }
+        },
+        "escalation": {
+          "length_buckets": {
+            "p50": 19,
+            "p95": 23
+          },
+          "single_request": {
+            "p50": {
+              "repeats": 30,
+              "p50_ms": 6.9634,
+              "p95_ms": 7.7401,
+              "p99_ms": 8.3578,
+              "mean_ms": 6.9271
+            },
+            "p95": {
+              "repeats": 30,
+              "p50_ms": 6.7137,
+              "p95_ms": 7.3076,
+              "p99_ms": 7.3296,
+              "mean_ms": 6.682
+            }
+          },
+          "batch_throughput": {
+            "1": {
+              "batch_ms": 6.244,
+              "per_sample_ms": 6.244,
+              "qps": 160.1,
+              "repeats": 5
+            },
+            "8": {
+              "batch_ms": 11.265,
+              "per_sample_ms": 1.408,
+              "qps": 710.2,
+              "repeats": 5
+            },
+            "32": {
+              "batch_ms": 27.788,
+              "per_sample_ms": 0.868,
+              "qps": 1151.6,
+              "repeats": 5
+            }
+          }
+        },
+        "complexity": {
+          "length_buckets": {
+            "p50": 19,
+            "p95": 23
+          },
+          "single_request": {
+            "p50": {
+              "repeats": 30,
+              "p50_ms": 6.9432,
+              "p95_ms": 7.7879,
+              "p99_ms": 7.9427,
+              "mean_ms": 6.9157
+            },
+            "p95": {
+              "repeats": 30,
+              "p50_ms": 6.9475,
+              "p95_ms": 7.3431,
+              "p99_ms": 7.6517,
+              "mean_ms": 6.8132
+            }
+          },
+          "batch_throughput": {
+            "1": {
+              "batch_ms": 6.987,
+              "per_sample_ms": 6.987,
+              "qps": 143.1,
+              "repeats": 5
+            },
+            "8": {
+              "batch_ms": 11.136,
+              "per_sample_ms": 1.392,
+              "qps": 718.4,
+              "repeats": 5
+            },
+            "32": {
+              "batch_ms": 27.694,
+              "per_sample_ms": 0.865,
+              "qps": 1155.5,
+              "repeats": 5
+            }
+          }
+        }
+      },
+      "footprint_mb": {
+        "intent": {
+          "own_mb": 390.6,
+          "base_mb": 0.0,
+          "total_mb": 390.6
+        },
+        "escalation": {
+          "own_mb": 390.6,
+          "base_mb": 0.0,
+          "total_mb": 390.6
+        },
+        "complexity": {
+          "own_mb": 390.6,
+          "base_mb": 0.0,
+          "total_mb": 390.6
+        }
+      },
+      "end_to_end_serial": {
+        "p50_ms": 20.67,
+        "note": "三个任务模型串行执行的总延迟"
+      }
+    },
+    "qwen_lora": {
+      "tasks": {
+        "intent": {
+          "length_buckets": {
+            "p50": 11,
+            "p95": 14
+          },
+          "single_request": {
+            "p50": {
+              "repeats": 30,
+              "p50_ms": 47.4157,
+              "p95_ms": 49.6628,
+              "p99_ms": 50.2483,
+              "mean_ms": 47.6958
+            },
+            "p95": {
+              "repeats": 30,
+              "p50_ms": 47.2174,
+              "p95_ms": 49.283,
+              "p99_ms": 50.2103,
+              "mean_ms": 47.8108
+            }
+          },
+          "batch_throughput": {
+            "1": {
+              "batch_ms": 49.29,
+              "per_sample_ms": 49.29,
+              "qps": 20.3,
+              "repeats": 5
+            },
+            "8": {
+              "batch_ms": 313.118,
+              "per_sample_ms": 39.14,
+              "qps": 25.5,
+              "repeats": 5
+            },
+            "32": {
+              "batch_ms": 1298.436,
+              "per_sample_ms": 40.576,
+              "qps": 24.6,
+              "repeats": 5
+            }
+          }
+        },
+        "escalation": {
+          "length_buckets": {
+            "p50": 11,
+            "p95": 14
+          },
+          "single_request": {
+            "p50": {
+              "repeats": 30,
+              "p50_ms": 47.4702,
+              "p95_ms": 48.1015,
+              "p99_ms": 48.6512,
+              "mean_ms": 47.5846
+            },
+            "p95": {
+              "repeats": 30,
+              "p50_ms": 47.228,
+              "p95_ms": 48.5848,
+              "p99_ms": 48.9936,
+              "mean_ms": 47.4304
+            }
+          },
+          "batch_throughput": {
+            "1": {
+              "batch_ms": 47.699,
+              "per_sample_ms": 47.699,
+              "qps": 21.0,
+              "repeats": 5
+            },
+            "8": {
+              "batch_ms": 328.747,
+              "per_sample_ms": 41.093,
+              "qps": 24.3,
+              "repeats": 5
+            },
+            "32": {
+              "batch_ms": 1194.438,
+              "per_sample_ms": 37.326,
+              "qps": 26.8,
+              "repeats": 5
+            }
+          }
+        },
+        "complexity": {
+          "length_buckets": {
+            "p50": 11,
+            "p95": 14
+          },
+          "single_request": {
+            "p50": {
+              "repeats": 30,
+              "p50_ms": 47.6273,
+              "p95_ms": 48.3572,
+              "p99_ms": 48.6612,
+              "mean_ms": 47.7205
+            },
+            "p95": {
+              "repeats": 30,
+              "p50_ms": 47.174,
+              "p95_ms": 47.9449,
+              "p99_ms": 48.0424,
+              "mean_ms": 47.2882
+            }
+          },
+          "batch_throughput": {
+            "1": {
+              "batch_ms": 47.456,
+              "per_sample_ms": 47.456,
+              "qps": 21.1,
+              "repeats": 5
+            },
+            "8": {
+              "batch_ms": 328.956,
+              "per_sample_ms": 41.12,
+              "qps": 24.3,
+              "repeats": 5
+            },
+            "32": {
+              "batch_ms": 1183.926,
+              "per_sample_ms": 36.998,
+              "qps": 27.0,
+              "repeats": 5
+            }
+          }
+        }
+      },
+      "footprint_mb": {
+        "intent": {
+          "own_mb": 40.2,
+          "base_mb": 1687.9,
+          "total_mb": 1728.1
+        },
+        "escalation": {
+          "own_mb": 40.2,
+          "base_mb": 1687.9,
+          "total_mb": 1728.1
+        },
+        "complexity": {
+          "own_mb": 40.2,
+          "base_mb": 1687.9,
+          "total_mb": 1728.1
+        }
+      },
+      "end_to_end_serial": {
+        "p50_ms": 142.51,
+        "note": "三个任务模型串行执行的总延迟"
+      }
+    },
+    "rules": {
+      "tasks": {
+        "intent": {
+          "length_buckets": {
+            "p50": 18,
+            "p95": 22
+          },
+          "single_request": {
+            "p50": {
+              "repeats": 30,
+              "p50_ms": 0.0045,
+              "p95_ms": 0.0051,
+              "p99_ms": 0.0055,
+              "mean_ms": 0.0046
+            },
+            "p95": {
+              "repeats": 30,
+              "p50_ms": 0.005,
+              "p95_ms": 0.0051,
+              "p99_ms": 0.0052,
+              "mean_ms": 0.005
+            }
+          },
+          "batch_throughput": {
+            "1": {
+              "batch_ms": 0.005,
+              "per_sample_ms": 0.005,
+              "qps": 222222.1,
+              "repeats": 5
+            },
+            "8": {
+              "batch_ms": 0.034,
+              "per_sample_ms": 0.004,
+              "qps": 236162.3,
+              "repeats": 5
+            },
+            "32": {
+              "batch_ms": 0.084,
+              "per_sample_ms": 0.003,
+              "qps": 380762.0,
+              "repeats": 5
+            }
+          }
+        },
+        "escalation": {
+          "length_buckets": {
+            "p50": 18,
+            "p95": 22
+          },
+          "single_request": {
+            "p50": {
+              "repeats": 30,
+              "p50_ms": 0.0045,
+              "p95_ms": 0.0051,
+              "p99_ms": 0.0055,
+              "mean_ms": 0.0046
+            },
+            "p95": {
+              "repeats": 30,
+              "p50_ms": 0.005,
+              "p95_ms": 0.0051,
+              "p99_ms": 0.0052,
+              "mean_ms": 0.005
+            }
+          },
+          "batch_throughput": {
+            "1": {
+              "batch_ms": 0.005,
+              "per_sample_ms": 0.005,
+              "qps": 222222.1,
+              "repeats": 5
+            },
+            "8": {
+              "batch_ms": 0.034,
+              "per_sample_ms": 0.004,
+              "qps": 236162.3,
+              "repeats": 5
+            },
+            "32": {
+              "batch_ms": 0.084,
+              "per_sample_ms": 0.003,
+              "qps": 380762.0,
+              "repeats": 5
+            }
+          }
+        },
+        "complexity": {
+          "length_buckets": {
+            "p50": 18,
+            "p95": 22
+          },
+          "single_request": {
+            "p50": {
+              "repeats": 30,
+              "p50_ms": 0.0045,
+              "p95_ms": 0.0051,
+              "p99_ms": 0.0055,
+              "mean_ms": 0.0046
+            },
+            "p95": {
+              "repeats": 30,
+              "p50_ms": 0.005,
+              "p95_ms": 0.0051,
+              "p99_ms": 0.0052,
+              "mean_ms": 0.005
+            }
+          },
+          "batch_throughput": {
+            "1": {
+              "batch_ms": 0.005,
+              "per_sample_ms": 0.005,
+              "qps": 222222.1,
+              "repeats": 5
+            },
+            "8": {
+              "batch_ms": 0.034,
+              "per_sample_ms": 0.004,
+              "qps": 236162.3,
+              "repeats": 5
+            },
+            "32": {
+              "batch_ms": 0.084,
+              "per_sample_ms": 0.003,
+              "qps": 380762.0,
+              "repeats": 5
+            }
+          }
+        }
+      },
+      "footprint_mb": {
+        "intent": 0.0,
+        "escalation": 0.0,
+        "complexity": 0.0
+      },
+      "end_to_end_serial": {
+        "p50_ms": 0.0045,
+        "note": "规则一次扫描同时产出三个任务的判定，无需串行跑三次"
+      }
+    }
+  },
+  "comparison": {
+    "end_to_end_p50_ms": {
+      "encoder": 20.67,
+      "qwen_lora": 142.51,
+      "rules": 0.0045
+    },
+    "latency_ratio_vs_rules": {
+      "encoder": 4593.3,
+      "qwen_lora": 31668.9
+    },
+    "batch32_qps": {
+      "encoder": 1114.2,
+      "qwen_lora": 24.6,
+      "rules": 380762.0
+    },
+    "intent_model_footprint_mb": {
+      "encoder": 390.6,
+      "qwen_lora": 1728.1,
+      "rules": 0.0
+    }
+  }
+}

@@ -1,0 +1,2171 @@
+{
+  "n_samples": 480,
+  "folds": 5,
+  "latency_ms": {
+    "encoder": 20.67,
+    "qwen_lora": 142.51,
+    "rules": 0.0045
+  },
+  "threshold_grid": 101,
+  "baselines": {
+    "encoder": {
+      "n": 480,
+      "intent": {
+        "accuracy": 0.90625,
+        "f1_macro": 0.9057696184107391,
+        "ece_top_confidence": 0.0570449708650509,
+        "mean_confidence": 0.9486908139040072
+      },
+      "needs_escalation": {
+        "accuracy": 0.8645833333333334,
+        "f1": 0.8387096774193549,
+        "brier": 0.10019522836417709
+      },
+      "complexity": {
+        "mae": 0.12813668859764932
+      },
+      "cost_ms": 20.67
+    },
+    "qwen_lora": {
+      "n": 480,
+      "intent": {
+        "accuracy": 0.8979166666666667,
+        "f1_macro": 0.8966735145017325,
+        "ece_top_confidence": 0.07455287768195071,
+        "mean_confidence": 0.9650953253731132
+      },
+      "needs_escalation": {
+        "accuracy": 0.8645833333333334,
+        "f1": 0.8410757946210269,
+        "brier": 0.11377310829919994
+      },
+      "complexity": {
+        "mae": 0.15361667958399902
+      },
+      "cost_ms": 142.51
+    },
+    "rules": {
+      "n": 480,
+      "intent": {
+        "accuracy": 0.5916666666666667,
+        "f1_macro": 0.5933013314369247,
+        "ece_top_confidence": 0.26666666666666683,
+        "mean_confidence": 0.7350000000000001
+      },
+      "needs_escalation": {
+        "accuracy": 0.7020833333333333,
+        "f1": 0.6898047722342733,
+        "brier": 0.24833333333333332
+      },
+      "complexity": {
+        "mae": 0.16697520833333332
+      },
+      "cost_ms": 0.0045
+    }
+  },
+  "cascades": {
+    "cascade-enc2qwen": {
+      "points": [
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.0,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.01,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.02,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.03,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.04,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.05,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.06,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.07,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.08,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.09,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.1,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.11,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.12,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.13,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.14,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.15,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.16,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.17,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.18,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.19,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.2,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.21,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.22,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.23,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.24,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.25,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.26,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.27,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.28,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.29,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.3,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.31,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.32,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.33,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.34,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.35,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.36,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.37,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.38,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.39,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.4,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.41,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.42,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.43,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.44,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.45,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.46,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.47,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.48,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.49,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.5,
+          "escalation_rate": 0.0
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.06017457904915009,
+            "mean_confidence": 0.9497241302082936
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019427189750611
+          },
+          "complexity": {
+            "mae": 0.12799192915623386
+          },
+          "cost_ms": 20.9669,
+          "threshold": 0.51,
+          "escalation_rate": 0.0021
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.06017457904915009,
+            "mean_confidence": 0.9497241302082936
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019427189750611
+          },
+          "complexity": {
+            "mae": 0.12799192915623386
+          },
+          "cost_ms": 20.9669,
+          "threshold": 0.52,
+          "escalation_rate": 0.0021
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.9041666666666667,
+            "f1_macro": 0.9036093278747187,
+            "ece_top_confidence": 0.061253478626410084,
+            "mean_confidence": 0.9507028639316559
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019281909371823
+          },
+          "complexity": {
+            "mae": 0.12869818484053014
+          },
+          "cost_ms": 21.2638,
+          "threshold": 0.53,
+          "escalation_rate": 0.0042
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.9041666666666667,
+            "f1_macro": 0.9036093278747187,
+            "ece_top_confidence": 0.061253478626410084,
+            "mean_confidence": 0.9507028639316559
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019281909371823
+          },
+          "complexity": {
+            "mae": 0.12869818484053014
+          },
+          "cost_ms": 21.2638,
+          "threshold": 0.54,
+          "escalation_rate": 0.0042
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.9020833333333333,
+            "f1_macro": 0.9014096771261122,
+            "ece_top_confidence": 0.06192287461211276,
+            "mean_confidence": 0.950582074187696
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10018231268957918
+          },
+          "complexity": {
+            "mae": 0.1296452137357493
+          },
+          "cost_ms": 21.5607,
+          "threshold": 0.55,
+          "escalation_rate": 0.0063
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.9020833333333333,
+            "f1_macro": 0.9014096771261122,
+            "ece_top_confidence": 0.06284041522691652,
+            "mean_confidence": 0.9514996148024996
+          },
+          "needs_escalation": {
+            "accuracy": 0.8625,
+            "f1": 0.835820895522388,
+            "brier": 0.10189058944161739
+          },
+          "complexity": {
+            "mae": 0.12957790370052058
+          },
+          "cost_ms": 21.8576,
+          "threshold": 0.56,
+          "escalation_rate": 0.0083
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.9020833333333333,
+            "f1_macro": 0.9014096771261122,
+            "ece_top_confidence": 0.06284041522691652,
+            "mean_confidence": 0.9514996148024996
+          },
+          "needs_escalation": {
+            "accuracy": 0.8625,
+            "f1": 0.835820895522388,
+            "brier": 0.10189058944161739
+          },
+          "complexity": {
+            "mae": 0.12957790370052058
+          },
+          "cost_ms": 21.8576,
+          "threshold": 0.57,
+          "escalation_rate": 0.0083
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.9020833333333333,
+            "f1_macro": 0.9014096771261122,
+            "ece_top_confidence": 0.06284041522691652,
+            "mean_confidence": 0.9514996148024996
+          },
+          "needs_escalation": {
+            "accuracy": 0.8625,
+            "f1": 0.835820895522388,
+            "brier": 0.10189058944161739
+          },
+          "complexity": {
+            "mae": 0.12957790370052058
+          },
+          "cost_ms": 21.8576,
+          "threshold": 0.58,
+          "escalation_rate": 0.0083
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.9020833333333333,
+            "f1_macro": 0.9014096771261122,
+            "ece_top_confidence": 0.0636702780301373,
+            "mean_confidence": 0.9523294776057204
+          },
+          "needs_escalation": {
+            "accuracy": 0.8625,
+            "f1": 0.835820895522388,
+            "brier": 0.10188129819402197
+          },
+          "complexity": {
+            "mae": 0.1294657043518126
+          },
+          "cost_ms": 22.1545,
+          "threshold": 0.59,
+          "escalation_rate": 0.0104
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.9020833333333333,
+            "f1_macro": 0.9014096771261122,
+            "ece_top_confidence": 0.0636702780301373,
+            "mean_confidence": 0.9523294776057204
+          },
+          "needs_escalation": {
+            "accuracy": 0.8625,
+            "f1": 0.835820895522388,
+            "brier": 0.10188129819402197
+          },
+          "complexity": {
+            "mae": 0.1294657043518126
+          },
+          "cost_ms": 22.1545,
+          "threshold": 0.6,
+          "escalation_rate": 0.0104
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.9020833333333333,
+            "f1_macro": 0.9014096771261122,
+            "ece_top_confidence": 0.0636702780301373,
+            "mean_confidence": 0.9523294776057204
+          },
+          "needs_escalation": {
+            "accuracy": 0.8625,
+            "f1": 0.835820895522388,
+            "brier": 0.10188129819402197
+          },
+          "complexity": {
+            "mae": 0.1294657043518126
+          },
+          "cost_ms": 22.1545,
+          "threshold": 0.61,
+          "escalation_rate": 0.0104
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.9020833333333333,
+            "f1_macro": 0.9014066337777165,
+            "ece_top_confidence": 0.06680323885132872,
+            "mean_confidence": 0.9554624384269118
+          },
+          "needs_escalation": {
+            "accuracy": 0.8625,
+            "f1": 0.835820895522388,
+            "brier": 0.10187585194657638
+          },
+          "complexity": {
+            "mae": 0.12974569022953508
+          },
+          "cost_ms": 23.3421,
+          "threshold": 0.62,
+          "escalation_rate": 0.0187
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.9020833333333333,
+            "f1_macro": 0.9014066337777165,
+            "ece_top_confidence": 0.067371185682714,
+            "mean_confidence": 0.9560303852582971
+          },
+          "needs_escalation": {
+            "accuracy": 0.8625,
+            "f1": 0.835820895522388,
+            "brier": 0.10185661720692024
+          },
+          "complexity": {
+            "mae": 0.1297721430192391
+          },
+          "cost_ms": 23.639,
+          "threshold": 0.63,
+          "escalation_rate": 0.0208
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.9,
+            "f1_macro": 0.8992939404867707,
+            "ece_top_confidence": 0.07184551178167262,
+            "mean_confidence": 0.957390989549458
+          },
+          "needs_escalation": {
+            "accuracy": 0.8625,
+            "f1": 0.835820895522388,
+            "brier": 0.10184798070103908
+          },
+          "complexity": {
+            "mae": 0.12958638129432995
+          },
+          "cost_ms": 24.2328,
+          "threshold": 0.64,
+          "escalation_rate": 0.025
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.9,
+            "f1_macro": 0.8992939404867707,
+            "ece_top_confidence": 0.07184551178167262,
+            "mean_confidence": 0.957390989549458
+          },
+          "needs_escalation": {
+            "accuracy": 0.8625,
+            "f1": 0.835820895522388,
+            "brier": 0.10184798070103908
+          },
+          "complexity": {
+            "mae": 0.12958638129432995
+          },
+          "cost_ms": 24.2328,
+          "threshold": 0.65,
+          "escalation_rate": 0.025
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.9,
+            "f1_macro": 0.8992939404867707,
+            "ece_top_confidence": 0.07184551178167262,
+            "mean_confidence": 0.957390989549458
+          },
+          "needs_escalation": {
+            "accuracy": 0.8625,
+            "f1": 0.835820895522388,
+            "brier": 0.10184798070103908
+          },
+          "complexity": {
+            "mae": 0.12958638129432995
+          },
+          "cost_ms": 24.2328,
+          "threshold": 0.66,
+          "escalation_rate": 0.025
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.9,
+            "f1_macro": 0.8992939404867707,
+            "ece_top_confidence": 0.07184551178167262,
+            "mean_confidence": 0.957390989549458
+          },
+          "needs_escalation": {
+            "accuracy": 0.8625,
+            "f1": 0.835820895522388,
+            "brier": 0.10184798070103908
+          },
+          "complexity": {
+            "mae": 0.12958638129432995
+          },
+          "cost_ms": 24.2328,
+          "threshold": 0.67,
+          "escalation_rate": 0.025
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.9,
+            "f1_macro": 0.8992939404867707,
+            "ece_top_confidence": 0.07148174823572241,
+            "mean_confidence": 0.9580576144779722
+          },
+          "needs_escalation": {
+            "accuracy": 0.8625,
+            "f1": 0.835820895522388,
+            "brier": 0.10203084468000845
+          },
+          "complexity": {
+            "mae": 0.1296708379715681
+          },
+          "cost_ms": 24.5296,
+          "threshold": 0.68,
+          "escalation_rate": 0.0271
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.8979166666666667,
+            "f1_macro": 0.8971769791144852,
+            "ece_top_confidence": 0.07421342600137004,
+            "mean_confidence": 0.9587059589102864
+          },
+          "needs_escalation": {
+            "accuracy": 0.8625,
+            "f1": 0.835820895522388,
+            "brier": 0.10203055063928787
+          },
+          "complexity": {
+            "mae": 0.1294710389802853
+          },
+          "cost_ms": 24.8265,
+          "threshold": 0.69,
+          "escalation_rate": 0.0292
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.8958333333333334,
+            "f1_macro": 0.8950555115773264,
+            "ece_top_confidence": 0.07388641641785694,
+            "mean_confidence": 0.959391619823873
+          },
+          "needs_escalation": {
+            "accuracy": 0.8625,
+            "f1": 0.835820895522388,
+            "brier": 0.102024616390614
+          },
+          "complexity": {
+            "mae": 0.12918536490748325
+          },
+          "cost_ms": 25.4203,
+          "threshold": 0.7,
+          "escalation_rate": 0.0333
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.8958333333333334,
+            "f1_macro": 0.8950555115773264,
+            "ece_top_confidence": 0.07327068392187358,
+            "mean_confidence": 0.9600073379154007
+          },
+          "needs_escalation": {
+            "accuracy": 0.8625,
+            "f1": 0.835820895522388,
+            "brier": 0.1034932435208471
+          },
+          "complexity": {
+            "mae": 0.12939623322635888
+          },
+          "cost_ms": 25.7172,
+          "threshold": 0.71,
+          "escalation_rate": 0.0354
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.8958333333333334,
+            "f1_macro": 0.8950555115773264,
+            "ece_top_confidence": 0.07262397439529493,
+            "mean_confidence": 0.9605476563796401
+          },
+          "needs_escalation": {
+            "accuracy": 0.8625,
+            "f1": 0.835820895522388,
+            "brier": 0.1034921649454166
+          },
+          "complexity": {
+            "mae": 0.12947938847343124
+          },
+          "cost_ms": 26.0141,
+          "threshold": 0.72,
+          "escalation_rate": 0.0375
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.8958333333333334,
+            "f1_macro": 0.8950555115773264,
+            "ece_top_confidence": 0.07262397439529493,
+            "mean_confidence": 0.9605476563796401
+          },
+          "needs_escalation": {
+            "accuracy": 0.8625,
+            "f1": 0.835820895522388,
+            "brier": 0.1034921649454166
+          },
+          "complexity": {
+            "mae": 0.12947938847343124
+          },
+          "cost_ms": 26.0141,
+          "threshold": 0.73,
+          "escalation_rate": 0.0375
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.8958333333333334,
+            "f1_macro": 0.8950555115773264,
+            "ece_top_confidence": 0.07276470866054296,
+            "mean_confidence": 0.9631326723222932
+          },
+          "needs_escalation": {
+            "accuracy": 0.8625,
+            "f1": 0.835820895522388,
+            "brier": 0.10348522686478762
+          },
+          "complexity": {
+            "mae": 0.1305179614049196
+          },
+          "cost_ms": 27.7955,
+          "threshold": 0.74,
+          "escalation_rate": 0.05
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.8958333333333334,
+            "f1_macro": 0.8950555115773264,
+            "ece_top_confidence": 0.07276470866054296,
+            "mean_confidence": 0.9631326723222932
+          },
+          "needs_escalation": {
+            "accuracy": 0.8625,
+            "f1": 0.835820895522388,
+            "brier": 0.10348522686478762
+          },
+          "complexity": {
+            "mae": 0.1305179614049196
+          },
+          "cost_ms": 27.7955,
+          "threshold": 0.75,
+          "escalation_rate": 0.05
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.8958333333333334,
+            "f1_macro": 0.8950555115773264,
+            "ece_top_confidence": 0.07175746640811355,
+            "mean_confidence": 0.96413849350065
+          },
+          "needs_escalation": {
+            "accuracy": 0.8625,
+            "f1": 0.835820895522388,
+            "brier": 0.10314898882454053
+          },
+          "complexity": {
+            "mae": 0.13050845509817202
+          },
+          "cost_ms": 28.3893,
+          "threshold": 0.76,
+          "escalation_rate": 0.0542
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.89375,
+            "f1_macro": 0.8929548232021283,
+            "ece_top_confidence": 0.07080425514529147,
+            "mean_confidence": 0.9645542551452915
+          },
+          "needs_escalation": {
+            "accuracy": 0.8625,
+            "f1": 0.835820895522388,
+            "brier": 0.10337617461407338
+          },
+          "complexity": {
+            "mae": 0.13136049825077253
+          },
+          "cost_ms": 29.5769,
+          "threshold": 0.77,
+          "escalation_rate": 0.0625
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.89375,
+            "f1_macro": 0.8929548232021283,
+            "ece_top_confidence": 0.07060383427888153,
+            "mean_confidence": 0.9643538342788815
+          },
+          "needs_escalation": {
+            "accuracy": 0.8625,
+            "f1": 0.835820895522388,
+            "brier": 0.10233244642558188
+          },
+          "complexity": {
+            "mae": 0.13234168090236684
+          },
+          "cost_ms": 29.8738,
+          "threshold": 0.78,
+          "escalation_rate": 0.0646
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.89375,
+            "f1_macro": 0.8929548232021283,
+            "ece_top_confidence": 0.0706823332235217,
+            "mean_confidence": 0.9644323332235217
+          },
+          "needs_escalation": {
+            "accuracy": 0.8625,
+            "f1": 0.835820895522388,
+            "brier": 0.10234441027457904
+          },
+          "complexity": {
+            "mae": 0.13226906083834666
+          },
+          "cost_ms": 30.1707,
+          "threshold": 0.79,
+          "escalation_rate": 0.0667
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.89375,
+            "f1_macro": 0.8929548232021283,
+            "ece_top_confidence": 0.07062043603509664,
+            "mean_confidence": 0.9643704360350966
+          },
+          "needs_escalation": {
+            "accuracy": 0.8625,
+            "f1": 0.835820895522388,
+            "brier": 0.10234417723122971
+          },
+          "complexity": {
+            "mae": 0.132310117262726
+          },
+          "cost_ms": 30.4676,
+          "threshold": 0.8,
+          "escalation_rate": 0.0688
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.8979166666666667,
+            "f1_macro": 0.8970452304025832,
+            "ece_top_confidence": 0.06851686916003619,
+            "mean_confidence": 0.965088076206545
+          },
+          "needs_escalation": {
+            "accuracy": 0.8625,
+            "f1": 0.835820895522388,
+            "brier": 0.10281526372784532
+          },
+          "complexity": {
+            "mae": 0.13175803538722294
+          },
+          "cost_ms": 31.6551,
+          "threshold": 0.81,
+          "escalation_rate": 0.0771
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.8979166666666667,
+            "f1_macro": 0.8970452304025832,
+            "ece_top_confidence": 0.06887568676223352,
+            "mean_confidence": 0.9654468938087424
+          },
+          "needs_escalation": {
+            "accuracy": 0.8625,
+            "f1": 0.835820895522388,
+            "brier": 0.10281311082716306
+          },
+          "complexity": {
+            "mae": 0.13199340698930123
+          },
+          "cost_ms": 32.2489,
+          "threshold": 0.82,
+          "escalation_rate": 0.0813
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.8979166666666667,
+            "f1_macro": 0.8970452304025832,
+            "ece_top_confidence": 0.06922976393252613,
+            "mean_confidence": 0.965800970979035
+          },
+          "needs_escalation": {
+            "accuracy": 0.8625,
+            "f1": 0.835820895522388,
+            "brier": 0.10396018532873486
+          },
+          "complexity": {
+            "mae": 0.13184471066109835
+          },
+          "cost_ms": 32.5458,
+          "threshold": 0.83,
+          "escalation_rate": 0.0833
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.8979166666666667,
+            "f1_macro": 0.8970452304025832,
+            "ece_top_confidence": 0.0695976903662086,
+            "mean_confidence": 0.9661688974127174
+          },
+          "needs_escalation": {
+            "accuracy": 0.8604166666666667,
+            "f1": 0.8329177057356608,
+            "brier": 0.10465877272268354
+          },
+          "complexity": {
+            "mae": 0.13187672766856848
+          },
+          "cost_ms": 33.7334,
+          "threshold": 0.84,
+          "escalation_rate": 0.0917
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.8958333333333334,
+            "f1_macro": 0.8950732586275965,
+            "ece_top_confidence": 0.06998522349943723,
+            "mean_confidence": 0.9658185568327705
+          },
+          "needs_escalation": {
+            "accuracy": 0.8604166666666667,
+            "f1": 0.8329177057356608,
+            "brier": 0.10488448006069258
+          },
+          "complexity": {
+            "mae": 0.1321632184491803
+          },
+          "cost_ms": 34.0303,
+          "threshold": 0.85,
+          "escalation_rate": 0.0938
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.8958333333333334,
+            "f1_macro": 0.8950732586275965,
+            "ece_top_confidence": 0.07020943568398555,
+            "mean_confidence": 0.9660427690173189
+          },
+          "needs_escalation": {
+            "accuracy": 0.8604166666666667,
+            "f1": 0.8329177057356608,
+            "brier": 0.10596057000191439
+          },
+          "complexity": {
+            "mae": 0.13205420830192666
+          },
+          "cost_ms": 35.2179,
+          "threshold": 0.86,
+          "escalation_rate": 0.1021
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.8979166666666667,
+            "f1_macro": 0.8971901117985456,
+            "ece_top_confidence": 0.06890295067181189,
+            "mean_confidence": 0.9663323585564891
+          },
+          "needs_escalation": {
+            "accuracy": 0.8604166666666667,
+            "f1": 0.8329177057356608,
+            "brier": 0.1059596249680248
+          },
+          "complexity": {
+            "mae": 0.13202112530263763
+          },
+          "cost_ms": 35.5148,
+          "threshold": 0.87,
+          "escalation_rate": 0.1042
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.9,
+            "f1_macro": 0.8993055946504552,
+            "ece_top_confidence": 0.07045879395057762,
+            "mean_confidence": 0.966851941558222
+          },
+          "needs_escalation": {
+            "accuracy": 0.8604166666666667,
+            "f1": 0.8329177057356608,
+            "brier": 0.10595915337700802
+          },
+          "complexity": {
+            "mae": 0.13182686494879425
+          },
+          "cost_ms": 36.1086,
+          "threshold": 0.88,
+          "escalation_rate": 0.1083
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.8979166666666667,
+            "f1_macro": 0.8974164725535341,
+            "ece_top_confidence": 0.07016308040668572,
+            "mean_confidence": 0.9673291445399325
+          },
+          "needs_escalation": {
+            "accuracy": 0.8604166666666667,
+            "f1": 0.8329177057356608,
+            "brier": 0.1052012582814446
+          },
+          "complexity": {
+            "mae": 0.13208629021378857
+          },
+          "cost_ms": 37.89,
+          "threshold": 0.89,
+          "escalation_rate": 0.1208
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.9,
+            "f1_macro": 0.8995295953313032,
+            "ece_top_confidence": 0.0709483437861006,
+            "mean_confidence": 0.9682169194643696
+          },
+          "needs_escalation": {
+            "accuracy": 0.8604166666666667,
+            "f1": 0.8329177057356608,
+            "brier": 0.10516860014133746
+          },
+          "complexity": {
+            "mae": 0.1323997565677017
+          },
+          "cost_ms": 39.3744,
+          "threshold": 0.9,
+          "escalation_rate": 0.1313
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.9,
+            "f1_macro": 0.8995295953313032,
+            "ece_top_confidence": 0.07236363062014178,
+            "mean_confidence": 0.969091378338635
+          },
+          "needs_escalation": {
+            "accuracy": 0.8604166666666667,
+            "f1": 0.8329177057356608,
+            "brier": 0.1056593715075241
+          },
+          "complexity": {
+            "mae": 0.13174146321855487
+          },
+          "cost_ms": 41.1558,
+          "threshold": 0.91,
+          "escalation_rate": 0.1437
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.9,
+            "f1_macro": 0.8995295953313032,
+            "ece_top_confidence": 0.0735482195392251,
+            "mean_confidence": 0.9702759672577183
+          },
+          "needs_escalation": {
+            "accuracy": 0.8604166666666667,
+            "f1": 0.8329177057356608,
+            "brier": 0.10575293185708556
+          },
+          "complexity": {
+            "mae": 0.13234687405270837
+          },
+          "cost_ms": 43.2341,
+          "threshold": 0.92,
+          "escalation_rate": 0.1583
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.8979166666666667,
+            "f1_macro": 0.8976375005450251,
+            "ece_top_confidence": 0.07327080288281045,
+            "mean_confidence": 0.9711874695494771
+          },
+          "needs_escalation": {
+            "accuracy": 0.8604166666666667,
+            "f1": 0.8329177057356608,
+            "brier": 0.10573598205231627
+          },
+          "complexity": {
+            "mae": 0.13273377867770692
+          },
+          "cost_ms": 45.6093,
+          "threshold": 0.93,
+          "escalation_rate": 0.175
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.8979166666666667,
+            "f1_macro": 0.8976375005450251,
+            "ece_top_confidence": 0.07371694153795648,
+            "mean_confidence": 0.9716336082046231
+          },
+          "needs_escalation": {
+            "accuracy": 0.8604166666666667,
+            "f1": 0.8329177057356608,
+            "brier": 0.10572960977536236
+          },
+          "complexity": {
+            "mae": 0.1329214968767017
+          },
+          "cost_ms": 48.5782,
+          "threshold": 0.94,
+          "escalation_rate": 0.1958
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.89375,
+            "f1_macro": 0.8934273772714812,
+            "ece_top_confidence": 0.07779014005015299,
+            "mean_confidence": 0.971540140050153
+          },
+          "needs_escalation": {
+            "accuracy": 0.8604166666666667,
+            "f1": 0.8329177057356608,
+            "brier": 0.10659791349390378
+          },
+          "complexity": {
+            "mae": 0.1334484596987317
+          },
+          "cost_ms": 52.4379,
+          "threshold": 0.95,
+          "escalation_rate": 0.2229
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.8916666666666667,
+            "f1_macro": 0.8913307497339612,
+            "ece_top_confidence": 0.08160838031520457,
+            "mean_confidence": 0.9732750469818712
+          },
+          "needs_escalation": {
+            "accuracy": 0.8625,
+            "f1": 0.835820895522388,
+            "brier": 0.10644473226754707
+          },
+          "complexity": {
+            "mae": 0.13411354421563448
+          },
+          "cost_ms": 58.6727,
+          "threshold": 0.96,
+          "escalation_rate": 0.2667
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.8979166666666667,
+            "f1_macro": 0.8975913023117413,
+            "ece_top_confidence": 0.07526716906577341,
+            "mean_confidence": 0.9715383111809691
+          },
+          "needs_escalation": {
+            "accuracy": 0.85625,
+            "f1": 0.8287841191066998,
+            "brier": 0.10995824499412796
+          },
+          "complexity": {
+            "mae": 0.13600614749379455
+          },
+          "cost_ms": 69.064,
+          "threshold": 0.97,
+          "escalation_rate": 0.3396
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.9041666666666667,
+            "f1_macro": 0.9035032641999579,
+            "ece_top_confidence": 0.06841444230328006,
+            "mean_confidence": 0.9673455656195681
+          },
+          "needs_escalation": {
+            "accuracy": 0.85625,
+            "f1": 0.8287841191066998,
+            "brier": 0.11021483464368129
+          },
+          "complexity": {
+            "mae": 0.14127622305826595
+          },
+          "cost_ms": 89.8467,
+          "threshold": 0.98,
+          "escalation_rate": 0.4854
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.8979166666666667,
+            "f1_macro": 0.8966735145017325,
+            "ece_top_confidence": 0.07286819014698259,
+            "mean_confidence": 0.9634106378381451
+          },
+          "needs_escalation": {
+            "accuracy": 0.8666666666666667,
+            "f1": 0.8423645320197044,
+            "brier": 0.11066493042318766
+          },
+          "complexity": {
+            "mae": 0.1442649166867261
+          },
+          "cost_ms": 132.8966,
+          "threshold": 0.99,
+          "escalation_rate": 0.7875
+        },
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.8979166666666667,
+            "f1_macro": 0.8966735145017325,
+            "ece_top_confidence": 0.07455287768195071,
+            "mean_confidence": 0.9650953253731132
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8410757946210269,
+            "brier": 0.11377310829919994
+          },
+          "complexity": {
+            "mae": 0.15361667958399902
+          },
+          "cost_ms": 163.18,
+          "threshold": 1.0,
+          "escalation_rate": 1.0
+        }
+      ],
+      "pareto": [
+        {
+          "n": 480,
+          "intent": {
+            "accuracy": 0.90625,
+            "f1_macro": 0.9057696184107391,
+            "ece_top_confidence": 0.0570449708650509,
+            "mean_confidence": 0.9486908139040072
+          },
+          "needs_escalation": {
+            "accuracy": 0.8645833333333334,
+            "f1": 0.8387096774193549,
+            "brier": 0.10019522836417709
+          },
+          "complexity": {
+            "mae": 0.12813668859764932
+          },
+          "cost_ms": 20.67,
+          "threshold": 0.0,
+          "escalation_rate": 0.0
+        }
+      ]
+    },
+    "rule-first": {
+      "n": 480,
+      "intent": {
+        "accuracy": 0.7020833333333333,
+        "f1_macro": 0.7080363303740463,
+        "ece_top_confidence": 0.21327773859103538,
+        "mean_confidence": 0.9153610719243688
+      },
+      "needs_escalation": {
+        "accuracy": 0.75625,
+        "f1": 0.7297921478060047,
+        "brier": 0.20191065661309987
+      },
+      "complexity": {
+        "mae": 0.1565092465511461
+      },
+      "cost_ms": 6.2055,
+      "rule_hit_rate": 0.7
+    },
+    "oracle-cascade": {
+      "n": 480,
+      "intent": {
+        "accuracy": 0.9541666666666667,
+        "f1_macro": 0.9536733613952983,
+        "ece_top_confidence": 0.05263297682007155,
+        "mean_confidence": 0.954666689534982
+      },
+      "needs_escalation": {
+        "accuracy": 0.8645833333333334,
+        "f1": 0.8387096774193549,
+        "brier": 0.10134834172543565
+      },
+      "complexity": {
+        "mae": 0.13019780248181273
+      },
+      "cost_ms": 34.0303,
+      "upgrade_rate": 0.0938,
+      "note": "完美门控上界：现实中做不到，用来判断「门控值不值得做」"
+    }
+  },
+  "conclusion": {
+    "encoder_only_f1": 0.9058,
+    "qwen_only_f1": 0.8967,
+    "rules_only_f1": 0.5933,
+    "oracle_cascade_f1": 0.9537,
+    "oracle_headroom_over_encoder": 0.0479,
+    "oracle_upgrade_rate": 0.0938,
+    "best_gated_f1": 0.9058,
+    "best_gated_threshold": 0.0,
+    "rule_first_f1": 0.708,
+    "rule_hit_rate": 0.7,
+    "cheapest_at_encoder_quality": {
+      "threshold": 0.0,
+      "cost_ms": 20.67,
+      "f1": 0.9058
+    },
+    "verdict": "置信度门控不值得做：可实现的门控质量不超过 encoder-only。但完美门控还有 0.0479 的空间，说明 encoder 的置信度不足以定位它自己会错的地方（校准问题，见 31 章）。"
+  }
+}

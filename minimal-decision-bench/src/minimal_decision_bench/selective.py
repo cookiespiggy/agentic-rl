@@ -12,12 +12,16 @@
 |---|---|
 | `error_detection_auroc` | 把置信度当「判对概率」的排序器，AUC 是多少（0.5 = 完全无信息） |
 | `risk_coverage` | 只保留最自信的 x% 流量时，准确率是多少 |
-| `aurc` | 风险-覆盖曲线的面积（越小越好，0.5 相当于无信息） |
+| `aurc` | 风险-覆盖曲线的面积（越小越好；**无信息时 ≈ 整体错误率**，不是 0.5） |
 | `confidence_gap` | 判错样本 vs 判对样本的置信度分布差距 |
 
-工程结论（见 `reports/confidence_diagnosis.json`）：三个分支的 `error_detection_auroc`
-都在 0.6 附近，**置信度定位错误的能力很弱**——这正是 11 章的级联实验里
-「帕累托前沿只剩 encoder-only 一个点」的原因。
+工程结论（见 `reports/confidence_diagnosis.json`）：**三个分支的定位能力差别很大**——
+encoder `error_detection_auroc = 0.7608`、Qwen LoRA `0.8511`、关键词规则 `0.5224`
+（规则几乎等于 0.5，说明它的置信度只有两个固定取值，**结构性无法定位错误**）。
+值得注意的是：**ECE 最好的 encoder，定位能力反而不如 Qwen**（ECE 0.0570 vs 0.0746，
+但 AUROC 0.7608 vs 0.8511）——校准好 ≠ 能定位错误，ECE 不是充分验收标准。
+这也是级联基准（`scripts/11_cascade_benchmark.py`）里「帕累托前沿只剩 encoder-only
+一个点」的原因：**被置信度挑出来的难样本，第二个分支也做不对**。
 """
 
 from __future__ import annotations

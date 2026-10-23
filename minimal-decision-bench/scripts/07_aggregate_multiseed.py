@@ -107,7 +107,11 @@ def _gap(left: dict, right: dict, metric: str) -> dict:
         "gap_left_minus_right": round(gap, 4),
         "pooled_std": round(pooled, 4),
         "gap_over_pooled_std": round(ratio, 2) if ratio != float("inf") else None,
-        "separated": ratio > 1.0,
+        # ⚠️ 描述性标志，**不是**显著性判定。
+        # 「比值 > 1」只说明差距大于一次波动，不等价于统计显著；
+        # 真正的显著性检验在 scripts/13_gap_stats.py（依赖校正 t + Holm），
+        # 且只在交叉验证口径上定义。
+        "descriptive_separated": ratio > 1.0,
         "better_side": better,
         "lower_is_better": lower_is_better,
     }
@@ -130,7 +134,7 @@ def _print(report: dict) -> None:
     print("\n模型相对规则基线的提升（gap / 模型自身 std）")
     for key, gap in report["gaps_vs_rules"].items():
         branch, metric = key.split("|")
-        verdict = "显著" if gap["separated"] else "未超出波动"
+        verdict = "超出波动（描述性）" if gap["descriptive_separated"] else "未超出波动（描述性）"
         sign = "+" if gap["gap_left_minus_right"] > 0 else ""
         print(
             f"  {branch:11s} {metric:32s} "

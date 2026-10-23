@@ -13,9 +13,9 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
-import time
 from pathlib import Path
 
 import matplotlib
@@ -31,13 +31,20 @@ ASSETS = ROOT.parent / "assets"
 # 每张图的源报告：用来检查「报告已更新但图没重生成」这种静默过期。
 #
 # 注意：matplotlib 输出**不可字节复现**（PNG/SVG 里带创建时间等元数据），
-# 所以不能用「重新生成后 diff」做守卫，只能比时间戳。
+# 所以不能用「重新生成后 diff」做守卫。
+#
+# 守卫也**不能只比 mtime**：报告文件一旦入库（reports/ 纳入版本控制），
+# 新克隆时 git 按路径序写文件，assets/ 必然早于 reports/，mtime 永远说「图旧了」。
+# 因此改为**内容寻址**：生成图时把源报告的内容哈希写进
+# assets/.figures_manifest.json，检查时重算哈希比对。
 SOURCES: dict[str, tuple[str, ...]] = {
-    "26-01-quality-vs-cost": ("latency_benchmark.json", "multiseed_report.json"),
+    "26-01-quality-vs-cost": ("latency_benchmark.json", "cross_validation.json"),
     "28-01-difficulty-layers": ("cross_validation.json",),
     "31-01-cv-stability": ("cross_validation.json",),
     "31-02-confidence-diagnosis": ("confidence_diagnosis.json",),
 }
+
+MANIFEST = ASSETS / ".figures_manifest.json"
 
 # 三个分支统一配色，保证跨图一致
 COLORS = {"encoder": "#185FA5", "qwen_lora": "#534AB7", "rules": "#854F0B"}
@@ -78,6 +85,9 @@ def main() -> None:
     made += _figure_cv_stability(formats, args.dpi)
     made += _figure_confidence_diagnosis(formats, args.dpi)
 
+    if made:
+        _write_manifest()
+
     if not made:
         print("没有生成任何图表：先跑 03/06/08 脚本产出报告")
         return
@@ -87,31 +97,69 @@ def main() -> None:
 
 
 def _report_stale() -> int:
-    """报告比图新说明图过期了。返回过期数量（供退出码使用）。"""
+    """检查「报告已更新但图没重生成」这种静默过期。返回过期数量。
+
+    内容寻址：比对 assets/.figures_manifest.json 里记录的源报告内容哈希。
+    不看 mtime——报告入库后，git 的写文件顺序会让 mtime 永远说「图旧了」。
+    """
     stale: list[str] = []
-    for stem, sources in SOURCES.items():
+    if not MANIFEST.exists():
+        print(f"缺少 {MANIFEST.relative_to(ROOT.parent)}，请跑一次 scripts/09_make_figures.py")
+        return len(SOURCES)
+    manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    entries = manifest.get("figures", {})
+
+    for stem in SOURCES:
         figure = ASSETS / f"{stem}.png"
         if not figure.exists():
+            stale.append(f"{stem}（图文件不存在）")
             continue
-        reports = [
-            ROOT / "reports" / name
-            for name in sources
-            if (ROOT / "reports" / name).exists()
-        ]
-        if not reports:
+        entry = entries.get(stem)
+        if entry is None:
+            stale.append(f"{stem}（清单里没有记录）")
             continue
-        newest = max(path.stat().st_mtime for path in reports)
-        if newest > figure.stat().st_mtime:
-            stale.append(
-                f"{stem}（源报告更新于 {time.strftime('%m-%d %H:%M', time.localtime(newest))}）"
-            )
+        for name, expected_hash in entry.get("sources", {}).items():
+            path = ROOT / "reports" / name
+            if not path.exists():
+                stale.append(f"{stem}（源报告 {name} 不存在）")
+                continue
+            actual = _file_hash(path)
+            if actual != expected_hash:
+                stale.append(f"{stem}（源报告 {name} 内容已变）")
+
     if stale:
         print("以下图表比源报告旧，请重跑 scripts/09_make_figures.py：")
         for item in stale:
             print(f"  {item}")
     else:
-        print("图表与源报告时间一致")
+        print("图表与源报告内容一致")
     return len(stale)
+
+
+def _file_hash(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _write_manifest() -> None:
+    """记录每张图的源报告内容哈希，供 figures-check 做内容寻址比对。"""
+    figures: dict[str, dict] = {}
+    for stem, sources in SOURCES.items():
+        entry: dict[str, str] = {}
+        for name in sources:
+            path = ROOT / "reports" / name
+            if path.exists():
+                entry[name] = _file_hash(path)
+        if entry:
+            figures[stem] = {
+                "figure": f"{stem}.png",
+                "sources": entry,
+            }
+    ASSETS.mkdir(parents=True, exist_ok=True)
+    MANIFEST.write_text(
+        json.dumps({"figures": figures}, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    print(f"写入 {MANIFEST.relative_to(ROOT.parent)}（{len(figures)} 张图）")
 
 
 def _setup_fonts() -> None:
@@ -150,23 +198,32 @@ def _save(fig, stem: str, formats: list[str], dpi: int) -> list[Path]:
 
 def _figure_quality_vs_cost(formats: list[str], dpi: int) -> list[Path]:
     latency = _load("latency_benchmark.json")
-    multiseed = _load("multiseed_report.json")
-    if not latency or not multiseed:
+    cv = _load("cross_validation.json")
+    if not latency or not cv:
         return []
 
+    # 质量口径：**交叉验证 pooled**（与文档主口径一致）。
+    # 早期版本用的是「多种子 / 单次切分」口径，那个口径曾给出与交叉验证方向相反的结论，
+    # 画出来的图也会与旁边的表格对不上。
     fig, ax = plt.subplots(figsize=(7.2, 4.6))
     for branch in BRANCHES:
         e2e = latency["branches"][branch]["end_to_end_serial"]["p50_ms"]
-        f1 = multiseed["branches"][branch]["intent.f1_macro"]
+        pooled = cv["summary"]["branches"].get(branch, {}).get("pooled", {})
+        f1 = pooled.get("intent", {}).get("f1_macro")
+        if f1 is None:
+            continue
+        per_fold = cv["summary"]["branches"].get(branch, {}).get("per_fold", {})
+        pf = per_fold.get("intent.f1_macro", {})
+        yerr = pf.get("std", 0.0)
         ax.errorbar(
-            e2e, f1["mean"], yerr=f1["std"], fmt="o", markersize=11,
+            e2e, f1, yerr=yerr, fmt="o", markersize=11,
             color=COLORS[branch], ecolor=COLORS[branch], elinewidth=1.4,
             capsize=5, label=LABELS[branch], zorder=3,
         )
         # 偏移单位是 points；encoder 误差棒向上延伸，标注放下面避免压线
         offset = (0, -24) if branch == "encoder" else (0, 16)
         ax.annotate(
-            f"{f1['mean']:.3f}", (e2e, f1["mean"]),
+            f"{f1:.3f}", (e2e, f1),
             textcoords="offset points", xytext=offset, ha="center",
             fontsize=10, color=COLORS[branch], fontweight="bold",
         )
@@ -174,7 +231,11 @@ def _figure_quality_vs_cost(formats: list[str], dpi: int) -> list[Path]:
     ax.set_xscale("log")
     ax.set_xlabel("端到端 P50 延迟（毫秒，对数轴）")
     ax.set_ylabel("intent F1 (macro)")
-    ax.set_title("质量与成本的取舍：三条判别路线\n（误差棒为多种子标准差）", fontsize=12)
+    ax.set_title(
+        "质量与成本的取舍：三条判别路线\n"
+        "（质量为 5 折交叉验证 pooled，误差棒为逐折标准差）",
+        fontsize=12,
+    )
     ax.grid(True, which="both", linestyle=":", alpha=0.35)
     ax.legend(frameon=False, loc="lower right")
     ax.set_ylim(0.5, 0.92)

@@ -13,14 +13,15 @@ QWEN_MODEL ?= /path/to/Qwen3.5-0.8B-Base/snapshots/master
 UV ?= $(shell command -v uv 2>/dev/null || echo $(HOME)/.local/bin/uv)
 
 .PHONY: help sync data encoder qwen compare hard latency quantize cascade confidence \
-        multiseed cv figures figures-check main check test lint links secrets checkpoints-clean
+        multiseed cv gap-stats render-docs figures figures-check docs-check main check test lint links secrets \
+        checkpoints-clean
 
 help:  ## 查看全部目标
 	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) \
 	  | awk -F':.*## ' '{printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
 
-sync:  ## 安装依赖（dev + train 组）
-	$(UV) sync --group dev --group train
+sync:  ## 安装依赖（dev + train + quantize 组）
+	$(UV) sync --group dev --group train --group quantize
 
 data:  ## 生成数据集（按模板切分 + 难度分层 + 泄漏自检）
 	$(UV) run python scripts/00_make_data.py
@@ -62,18 +63,31 @@ cv:  ## K 折交叉验证（5 折，约 40 分钟）
 	$(UV) run python scripts/08_cross_validate.py --folds 5 \
 	  --encoder-model-path $(ENCODER_MODEL) --qwen-model-path $(QWEN_MODEL)
 
+gap-stats:  ## 差距统计（描述性比值 + 三层显著性检验），纯后处理，不需要重训
+	$(UV) run python scripts/13_gap_stats.py
+
+render-docs:  ## 从已入库的 reports/*.json 重新渲染 inference/*.md（不重跑基准）
+	$(UV) run python scripts/14_render_inference_docs.py
+
 figures:  ## 生成教程图表到 ../assets/
 	$(UV) run python scripts/09_make_figures.py
 
-main: data encoder qwen compare hard latency figures  ## 主流程（不含慢的多种子与 CV）
+# 注意：cascade / confidence / figures 的顺序不能变。
+#   - cascade 与 confidence 依赖交叉验证的逐样本预测；
+#   - figures 依赖 cascade 产出的 confidence_diagnosis.json，必须排在最后，
+#     否则图会比源报告旧（内容寻址守卫会判定过期）。
+main: data encoder qwen compare hard latency cascade confidence gap-stats figures  ## 主流程（不含慢的多种子与 CV）
 
-check: lint test links secrets figures-check  ## CI 里的全部检查 + 密钥扫描 + 图表新鲜度
+check: lint test links secrets figures-check docs-check  ## CI 里的全部检查 + 密钥扫描 + 图表新鲜度 + 文档镜像一致性
 
 secrets:  ## 扫描 git 跟踪文件与提交历史里是否混进凭据
 	python ../tools/check_no_secrets.py --history
 
-figures-check:  ## 检查图表是否比源报告旧（图由 reports/ 生成，容易静默过期）
+figures-check:  ## 检查图表是否比源报告旧（内容寻址：比对源报告内容哈希，不看 mtime）
 	$(UV) run python scripts/09_make_figures.py --check
+
+docs-check:  ## 检查 inference/*.md 是否与已入库的 reports/*.json 一致
+	$(UV) run python scripts/14_render_inference_docs.py --check
 
 test:  ## 跑测试
 	$(UV) run pytest -q tests

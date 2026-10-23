@@ -167,7 +167,8 @@ def _verdict(report: dict) -> dict:
         "规则的 AUROC 只有 "
         f"{branches['rules']['error_detection_auroc']}（≈ 0.5），"
         "因为它的置信度只有两个固定取值，**结构性无法定位错误**——"
-        "这解释了 11 章里 `rule-first` 为什么必然拖累质量。"
+        "这解释了级联基准（`scripts/11_cascade_benchmark.py`）里 "
+        "`rule-first` 为什么必然拖累质量。"
     )
     return {
         "ece_best": ece_rank[0],

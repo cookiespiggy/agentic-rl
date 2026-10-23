@@ -1,0 +1,618 @@
+{
+  "caliber": "cross_validation",
+  "source": "reports/cross_validation.json",
+  "folds": 5,
+  "significance_policy": {
+    "authoritative": "nadeau_bengio_corrected_paired_t + holm",
+    "layers": {
+      "L1": "朴素配对 t（stats.ttest_rel）——参考值，依赖假设不成立时会高估显著性",
+      "L2": "Nadeau-Bengio 依赖校正 t：SE = s·sqrt(1/n + n_test/n_train)，5 折下 n_test/n_train = 1/4；s 取样本标准差（ddof=1）",
+      "L3": "精确 Wilcoxon 符号秩（method='exact'）；n=5 时最小可达双侧 p = 2/32 = 0.0625",
+      "multiplicity": "Holm 校正，m = 指标数"
+    },
+    "nadeau_bengio_se_factor": 0.6708,
+    "std_ddof_for_nadeau_bengio": 1,
+    "holm_m": 5,
+    "survivors": []
+  },
+  "descriptive_ratio_policy": {
+    "caliber": "总体标准差（ddof=0）",
+    "source": "summary.branches[b].per_fold[m].mean/.std（JSON 里已四舍五入的值）",
+    "warning": "这是描述性比值，不是显著性检验——不能读成「显著」"
+  },
+  "comparisons": {
+    "encoder_vs_qwen": {
+      "caliber": "cross_validation",
+      "left": "encoder",
+      "right": "qwen_lora",
+      "metrics": {
+        "intent_f1": {
+          "per_fold": {
+            "encoder": [
+              0.9476723040552828,
+              0.8538993338743026,
+              0.905119112565921,
+              0.9188311688311688,
+              0.9057543763426117
+            ],
+            "qwen_lora": [
+              0.9267738432098094,
+              0.8199294231480692,
+              0.9142857142857143,
+              0.9276528793335517,
+              0.8844654207741789
+            ]
+          },
+          "lower_is_better": false,
+          "mean_diff": 0.011634,
+          "paired_t": {
+            "t": 1.3305,
+            "p": 0.25413
+          },
+          "nadeau_bengio": {
+            "t": 0.887,
+            "p": 0.42518,
+            "se_factor": 0.6708,
+            "std_ddof": 1
+          },
+          "wilcoxon_exact": {
+            "p": 0.3125
+          },
+          "direction_consistent": "3/5",
+          "ties": 0,
+          "better_side": "encoder",
+          "descriptive_ratio_vs_pooled_std": 0.33,
+          "holm_significant": false
+        },
+        "intent_ece": {
+          "per_fold": {
+            "encoder": [
+              0.032795865088701304,
+              0.11574000989397365,
+              0.06892671808600428,
+              0.07535141644378507,
+              0.06789504860838254
+            ],
+            "qwen_lora": [
+              0.015710368752479532,
+              0.1540534139300386,
+              0.08117141885062067,
+              0.05086739857991533,
+              0.09181612481673554
+            ]
+          },
+          "lower_is_better": true,
+          "mean_diff": -0.006582,
+          "paired_t": {
+            "t": -0.5499,
+            "p": 0.61162
+          },
+          "nadeau_bengio": {
+            "t": -0.3666,
+            "p": 0.73247,
+            "se_factor": 0.6708,
+            "std_ddof": 1
+          },
+          "wilcoxon_exact": {
+            "p": 0.8125
+          },
+          "direction_consistent": "3/5",
+          "ties": 0,
+          "better_side": "encoder",
+          "descriptive_ratio_vs_pooled_std": 0.18,
+          "holm_significant": false
+        },
+        "escalation_f1": {
+          "per_fold": {
+            "encoder": [
+              0.8222222222222222,
+              0.8089887640449438,
+              0.8947368421052632,
+              0.8611111111111112,
+              0.8157894736842105
+            ],
+            "qwen_lora": [
+              0.8275862068965517,
+              0.8089887640449438,
+              0.875,
+              0.868421052631579,
+              0.8311688311688312
+            ]
+          },
+          "lower_is_better": false,
+          "mean_diff": -0.001663,
+          "paired_t": {
+            "t": -0.2823,
+            "p": 0.79174
+          },
+          "nadeau_bengio": {
+            "t": -0.1882,
+            "p": 0.8599,
+            "se_factor": 0.6708,
+            "std_ddof": 1
+          },
+          "wilcoxon_exact": {
+            "p": 0.875
+          },
+          "direction_consistent": "1/5",
+          "ties": 1,
+          "better_side": "qwen_lora",
+          "descriptive_ratio_vs_pooled_std": 0.05,
+          "holm_significant": false
+        },
+        "escalation_brier": {
+          "per_fold": {
+            "encoder": [
+              0.11331544091972579,
+              0.1333488835053899,
+              0.0710726351652627,
+              0.09006134505762413,
+              0.09317783717288293
+            ],
+            "qwen_lora": [
+              0.13197465595279975,
+              0.14350827022191248,
+              0.08932801758385289,
+              0.09983390858109976,
+              0.10422068915633476
+            ]
+          },
+          "lower_is_better": true,
+          "mean_diff": -0.013578,
+          "paired_t": {
+            "t": -6.7766,
+            "p": 0.00247
+          },
+          "nadeau_bengio": {
+            "t": -4.5177,
+            "p": 0.01068,
+            "se_factor": 0.6708,
+            "std_ddof": 1
+          },
+          "wilcoxon_exact": {
+            "p": 0.0625
+          },
+          "direction_consistent": "5/5",
+          "ties": 0,
+          "better_side": "encoder",
+          "descriptive_ratio_vs_pooled_std": 0.65,
+          "holm_significant": false
+        },
+        "complexity_mae": {
+          "per_fold": {
+            "encoder": [
+              0.12331025328139465,
+              0.13980681727081537,
+              0.13262477560242017,
+              0.13256500519439576,
+              0.11237659163922072
+            ],
+            "qwen_lora": [
+              0.1429943565680956,
+              0.17904400252575678,
+              0.12979601150900125,
+              0.15647448016628623,
+              0.15977454715085526
+            ]
+          },
+          "lower_is_better": true,
+          "mean_diff": -0.02548,
+          "paired_t": {
+            "t": -2.9352,
+            "p": 0.04259
+          },
+          "nadeau_bengio": {
+            "t": -1.9568,
+            "p": 0.122,
+            "se_factor": 0.6708,
+            "std_ddof": 1
+          },
+          "wilcoxon_exact": {
+            "p": 0.125
+          },
+          "direction_consistent": "4/5",
+          "ties": 0,
+          "better_side": "encoder",
+          "descriptive_ratio_vs_pooled_std": 1.89,
+          "holm_significant": false
+        }
+      }
+    },
+    "model_vs_rules": {
+      "encoder": {
+        "caliber": "cross_validation",
+        "left": "encoder",
+        "right": "rules",
+        "metrics": {
+          "intent_f1": {
+            "per_fold": {
+              "encoder": [
+                0.9476723040552828,
+                0.8538993338743026,
+                0.905119112565921,
+                0.9188311688311688,
+                0.9057543763426117
+              ],
+              "rules": [
+                0.5213293650793651,
+                0.6696969696969697,
+                0.6128205128205128,
+                0.6158459595959596,
+                0.503030303030303
+              ]
+            },
+            "lower_is_better": false,
+            "mean_diff": 0.321711,
+            "paired_t": {
+              "t": 7.4162,
+              "p": 0.00176
+            },
+            "nadeau_bengio": {
+              "t": 4.9441,
+              "p": 0.00779,
+              "se_factor": 0.6708,
+              "std_ddof": 1
+            },
+            "wilcoxon_exact": {
+              "p": 0.0625
+            },
+            "direction_consistent": "5/5",
+            "ties": 0,
+            "better_side": "encoder",
+            "descriptive_ratio_vs_pooled_std": 6.53,
+            "holm_significant": false
+          },
+          "intent_ece": {
+            "per_fold": {
+              "encoder": [
+                0.032795865088701304,
+                0.11574000989397365,
+                0.06892671808600428,
+                0.07535141644378507,
+                0.06789504860838254
+              ],
+              "rules": [
+                0.2750000000000001,
+                0.2541666666666668,
+                0.24375000000000002,
+                0.2958333333333334,
+                0.2645833333333334
+              ]
+            },
+            "lower_is_better": true,
+            "mean_diff": -0.194525,
+            "paired_t": {
+              "t": -10.8012,
+              "p": 0.00042
+            },
+            "nadeau_bengio": {
+              "t": -7.2008,
+              "p": 0.00197,
+              "se_factor": 0.6708,
+              "std_ddof": 1
+            },
+            "wilcoxon_exact": {
+              "p": 0.0625
+            },
+            "direction_consistent": "5/5",
+            "ties": 0,
+            "better_side": "encoder",
+            "descriptive_ratio_vs_pooled_std": 8.63,
+            "holm_significant": false
+          },
+          "escalation_f1": {
+            "per_fold": {
+              "encoder": [
+                0.8222222222222222,
+                0.8089887640449438,
+                0.8947368421052632,
+                0.8611111111111112,
+                0.8157894736842105
+              ],
+              "rules": [
+                0.6595744680851063,
+                0.72,
+                0.6976744186046512,
+                0.6888888888888889,
+                0.6813186813186813
+              ]
+            },
+            "lower_is_better": false,
+            "mean_diff": 0.151078,
+            "paired_t": {
+              "t": 8.1775,
+              "p": 0.00122
+            },
+            "nadeau_bengio": {
+              "t": 5.4517,
+              "p": 0.0055,
+              "se_factor": 0.6708,
+              "std_ddof": 1
+            },
+            "wilcoxon_exact": {
+              "p": 0.0625
+            },
+            "direction_consistent": "5/5",
+            "ties": 0,
+            "better_side": "encoder",
+            "descriptive_ratio_vs_pooled_std": 5.6,
+            "holm_significant": false
+          },
+          "escalation_brier": {
+            "per_fold": {
+              "encoder": [
+                0.11331544091972579,
+                0.1333488835053899,
+                0.0710726351652627,
+                0.09006134505762413,
+                0.09317783717288293
+              ],
+              "rules": [
+                0.27666666666666667,
+                0.24333333333333332,
+                0.22666666666666668,
+                0.24333333333333332,
+                0.25166666666666665
+              ]
+            },
+            "lower_is_better": true,
+            "mean_diff": -0.148138,
+            "paired_t": {
+              "t": -15.2946,
+              "p": 0.00011
+            },
+            "nadeau_bengio": {
+              "t": -10.1964,
+              "p": 0.00052,
+              "se_factor": 0.6708,
+              "std_ddof": 1
+            },
+            "wilcoxon_exact": {
+              "p": 0.0625
+            },
+            "direction_consistent": "5/5",
+            "ties": 0,
+            "better_side": "encoder",
+            "descriptive_ratio_vs_pooled_std": 7.81,
+            "holm_significant": false
+          },
+          "complexity_mae": {
+            "per_fold": {
+              "encoder": [
+                0.12331025328139465,
+                0.13980681727081537,
+                0.13262477560242017,
+                0.13256500519439576,
+                0.11237659163922072
+              ],
+              "rules": [
+                0.16797916666666665,
+                0.17019062499999996,
+                0.17525416666666668,
+                0.16077291666666668,
+                0.16067916666666668
+              ]
+            },
+            "lower_is_better": true,
+            "mean_diff": -0.038839,
+            "paired_t": {
+              "t": -9.6731,
+              "p": 0.00064
+            },
+            "nadeau_bengio": {
+              "t": -6.4487,
+              "p": 0.00298,
+              "se_factor": 0.6708,
+              "std_ddof": 1
+            },
+            "wilcoxon_exact": {
+              "p": 0.0625
+            },
+            "direction_consistent": "5/5",
+            "ties": 0,
+            "better_side": "encoder",
+            "descriptive_ratio_vs_pooled_std": 4.99,
+            "holm_significant": false
+          }
+        }
+      },
+      "qwen_lora": {
+        "caliber": "cross_validation",
+        "left": "qwen_lora",
+        "right": "rules",
+        "metrics": {
+          "intent_f1": {
+            "per_fold": {
+              "qwen_lora": [
+                0.9267738432098094,
+                0.8199294231480692,
+                0.9142857142857143,
+                0.9276528793335517,
+                0.8844654207741789
+              ],
+              "rules": [
+                0.5213293650793651,
+                0.6696969696969697,
+                0.6128205128205128,
+                0.6158459595959596,
+                0.503030303030303
+              ]
+            },
+            "lower_is_better": false,
+            "mean_diff": 0.310077,
+            "paired_t": {
+              "t": 6.9497,
+              "p": 0.00225
+            },
+            "nadeau_bengio": {
+              "t": 4.6331,
+              "p": 0.00978,
+              "se_factor": 0.6708,
+              "std_ddof": 1
+            },
+            "wilcoxon_exact": {
+              "p": 0.0625
+            },
+            "direction_consistent": "5/5",
+            "ties": 0,
+            "better_side": "qwen_lora",
+            "descriptive_ratio_vs_pooled_std": 5.88,
+            "holm_significant": false
+          },
+          "intent_ece": {
+            "per_fold": {
+              "qwen_lora": [
+                0.015710368752479532,
+                0.1540534139300386,
+                0.08117141885062067,
+                0.05086739857991533,
+                0.09181612481673554
+              ],
+              "rules": [
+                0.2750000000000001,
+                0.2541666666666668,
+                0.24375000000000002,
+                0.2958333333333334,
+                0.2645833333333334
+              ]
+            },
+            "lower_is_better": true,
+            "mean_diff": -0.187943,
+            "paired_t": {
+              "t": -6.4598,
+              "p": 0.00296
+            },
+            "nadeau_bengio": {
+              "t": -4.3065,
+              "p": 0.01258,
+              "se_factor": 0.6708,
+              "std_ddof": 1
+            },
+            "wilcoxon_exact": {
+              "p": 0.0625
+            },
+            "direction_consistent": "5/5",
+            "ties": 0,
+            "better_side": "qwen_lora",
+            "descriptive_ratio_vs_pooled_std": 5.39,
+            "holm_significant": false
+          },
+          "escalation_f1": {
+            "per_fold": {
+              "qwen_lora": [
+                0.8275862068965517,
+                0.8089887640449438,
+                0.875,
+                0.868421052631579,
+                0.8311688311688312
+              ],
+              "rules": [
+                0.6595744680851063,
+                0.72,
+                0.6976744186046512,
+                0.6888888888888889,
+                0.6813186813186813
+              ]
+            },
+            "lower_is_better": false,
+            "mean_diff": 0.152742,
+            "paired_t": {
+              "t": 9.1053,
+              "p": 0.00081
+            },
+            "nadeau_bengio": {
+              "t": 6.0702,
+              "p": 0.00372,
+              "se_factor": 0.6708,
+              "std_ddof": 1
+            },
+            "wilcoxon_exact": {
+              "p": 0.0625
+            },
+            "direction_consistent": "5/5",
+            "ties": 0,
+            "better_side": "qwen_lora",
+            "descriptive_ratio_vs_pooled_std": 6.72,
+            "holm_significant": false
+          },
+          "escalation_brier": {
+            "per_fold": {
+              "qwen_lora": [
+                0.13197465595279975,
+                0.14350827022191248,
+                0.08932801758385289,
+                0.09983390858109976,
+                0.10422068915633476
+              ],
+              "rules": [
+                0.27666666666666667,
+                0.24333333333333332,
+                0.22666666666666668,
+                0.24333333333333332,
+                0.25166666666666665
+              ]
+            },
+            "lower_is_better": true,
+            "mean_diff": -0.13456,
+            "paired_t": {
+              "t": -15.222,
+              "p": 0.00011
+            },
+            "nadeau_bengio": {
+              "t": -10.148,
+              "p": 0.00053,
+              "se_factor": 0.6708,
+              "std_ddof": 1
+            },
+            "wilcoxon_exact": {
+              "p": 0.0625
+            },
+            "direction_consistent": "5/5",
+            "ties": 0,
+            "better_side": "qwen_lora",
+            "descriptive_ratio_vs_pooled_std": 7.26,
+            "holm_significant": false
+          },
+          "complexity_mae": {
+            "per_fold": {
+              "qwen_lora": [
+                0.1429943565680956,
+                0.17904400252575678,
+                0.12979601150900125,
+                0.15647448016628623,
+                0.15977454715085526
+              ],
+              "rules": [
+                0.16797916666666665,
+                0.17019062499999996,
+                0.17525416666666668,
+                0.16077291666666668,
+                0.16067916666666668
+              ]
+            },
+            "lower_is_better": true,
+            "mean_diff": -0.013359,
+            "paired_t": {
+              "t": -1.372,
+              "p": 0.24199
+            },
+            "nadeau_bengio": {
+              "t": -0.9146,
+              "p": 0.41213,
+              "se_factor": 0.6708,
+              "std_ddof": 1
+            },
+            "wilcoxon_exact": {
+              "p": 0.3125
+            },
+            "direction_consistent": "4/5",
+            "ties": 0,
+            "better_side": "qwen_lora",
+            "descriptive_ratio_vs_pooled_std": 1.08,
+            "holm_significant": false
+          }
+        }
+      }
+    }
+  }
+}
