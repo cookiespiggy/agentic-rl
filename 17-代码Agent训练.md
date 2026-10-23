@@ -29,8 +29,8 @@ Agent 动作（Actions）:
 
 ```python
 """安全的代码执行沙盒 —— Docker 隔离版"""
+import base64
 import subprocess
-import tempfile
 import os
 
 
@@ -41,8 +41,20 @@ class DockerCodeSandbox:
     - 网络隔离：禁止外部网络访问
     - 内存限制：256MB
     - 超时限制：30 秒
-    - 文件系统隔离：只读挂载 + 临时写入目录
+    - 文件系统隔离：容器内独立文件系统，代码写到容器自己的 /tmp
+    
+    代码怎么送进容器？**不要用 `-v 宿主文件:/app/code.py`**——
+    macOS 上 Docker Desktop 默认不共享 /tmp，宿主文件在容器里会变成空文件，
+    报错是 `can't find '__main__' module`（很难一眼看出是挂载没生效）。
+    这里改成把代码 base64 后塞进环境变量，再让容器内的 bootstrap 脚本
+    解码写到容器自己的 /tmp——不依赖任何 bind mount。
     """
+    
+    BOOTSTRAP = (
+        "import base64, os, sys\n"
+        "open('/tmp/code.py', 'wb').write(base64.b64decode(os.environ['CODE_B64']))\n"
+        "os.execv(sys.executable, [sys.executable, '/tmp/code.py'])\n"
+    )
     
     def __init__(self, image: str = "python:3.11-slim",
                  timeout: int = 30, memory_limit: str = "256m"):
@@ -60,23 +72,18 @@ class DockerCodeSandbox:
         Returns:
             执行结果字典：{stdout, stderr, return_code, success}
         """
-        # 将代码写入临时文件
-        with tempfile.NamedTemporaryFile(
-            mode='w', suffix='.py', delete=False, dir='/tmp'
-        ) as f:
-            f.write(code)
-            code_file = f.name
+        env_code = base64.b64encode(code.encode("utf-8")).decode("ascii")
         
         try:
             result = subprocess.run(
                 [
-                    "docker", "run", "--rm",
+                    "docker", "run", "--rm", "-i",
                     "--network=none",           # 网络隔离
                     f"--memory={self.memory_limit}",
                     "--cpus=1",                 # 限制 CPU
-                    "-v", f"{code_file}:/app/code.py:ro",  # 只读挂载
+                    "-e", f"CODE_B64={env_code}",
                     self.image,
-                    "python", "/app/code.py"
+                    "python", "-c", self.BOOTSTRAP,
                 ],
                 input=stdin_input,
                 capture_output=True,
@@ -99,11 +106,6 @@ class DockerCodeSandbox:
         except FileNotFoundError:
             # Docker 未安装，降级到子进程模式
             return self._fallback_execute(code, stdin_input)
-        finally:
-            try:
-                os.unlink(code_file)
-            except OSError:
-                pass  # 临时文件可能已被清掉，忽略
     
     @staticmethod
     def _limit_resources():
@@ -121,6 +123,7 @@ class DockerCodeSandbox:
         比 Docker 弱：没有网络隔离，也没有独立的文件系统视图。
         只适合本地开发调试，**不要**在训练里长期用。
         """
+        import tempfile
         with tempfile.NamedTemporaryFile(
             mode='w', suffix='.py', delete=False
         ) as f:
