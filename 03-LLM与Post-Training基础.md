@@ -62,9 +62,30 @@ training_data = [
 ]
 
 # SFT 的损失函数（Loss Function）
-# 只计算 assistant 回复部分的 loss
-loss = CrossEntropyLoss(model_output, target_tokens)
+# 只计算 assistant 回复部分的 loss —— 这需要先 mask 掉 prompt 的 token
+import torch
+import torch.nn.functional as F
+
+def sft_loss(logits, labels, prompt_mask):
+    """labels 里 prompt 部分已经被置为 -100（PyTorch 的忽略值）。
+
+    prompt_mask: 形状与 labels 相同，True 表示「属于 prompt，要忽略」。
+    """
+    labels = labels.masked_fill(prompt_mask, -100)
+    # F.cross_entropy 默认 ignore_index=-100，会跳过被置为 -100 的位置
+    return F.cross_entropy(
+        logits.reshape(-1, logits.size(-1)),   # [B*T, V]
+        labels.reshape(-1),                     # [B*T]
+        ignore_index=-100,
+    )
 ```
+
+> **为什么必须 mask**：如果把 prompt 的 token 也算进 loss，模型就会花容量去「学会复述问题」，
+> 而不是学「怎么回答」。这在多轮对话里更明显——如果不 mask，模型会倾向于把上一轮的内容也当成要学的东西。
+>
+> 实践上，`labels` 通常由数据处理代码直接构造：prompt 部分填 `-100`，
+> assistant 部分填真实的 token id（`-100` 是 PyTorch `cross_entropy` 的 `ignore_index` 默认值）。
+
 
 **SFT 的局限**：
 - 模型只学到"模仿"训练数据中的回复

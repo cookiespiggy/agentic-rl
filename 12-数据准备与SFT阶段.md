@@ -180,15 +180,18 @@ def has_tool_response(sample):
             return True
     return False
 
-def is_duplicate(sample, existing_list, threshold=0.9):
-    """基于内容哈希的简单去重"""
+def content_hash(sample):
+    """样本内容哈希：把所有消息内容拼起来做 MD5"""
     content = "".join(m["content"] for m in sample["messages"])
-    h = hashlib.md5(content.encode()).hexdigest()
-    seen = set()
-    for s in existing_list:
-        ch = "".join(m["content"] for m in s["messages"])
-        seen.add(hashlib.md5(ch.encode()).hexdigest())
-    return h in seen
+    return hashlib.md5(content.encode()).hexdigest()
+
+def is_duplicate(sample, seen_hashes):
+    """精确去重：消息内容完全相同才算重复（不做相似度判断）。
+
+    seen_hashes 是「已经见过的样本哈希集合」，由调用方在循环外维护并传入；
+    这样整个过滤过程只扫一遍数据，是 O(n) 而不是每条样本重建一次集合的 O(n²)。
+    """
+    return content_hash(sample) in seen_hashes
 
 def extract_json_from_tool_call(content):
     """从工具调用内容中提取 JSON 字符串"""
@@ -212,7 +215,8 @@ def validate_tool_call_format(sample):
 def filter_sft_data(data_list):
     """SFT 数据质量过滤"""
     filtered = []
-    
+    seen_hashes = set()   # 哈希集合在循环外累积，避免每条样本重建一遍（O(n²)）
+
     for sample in data_list:
         # 1. 长度过滤
         total_len = sum(len(m["content"]) for m in sample["messages"])
@@ -228,8 +232,9 @@ def filter_sft_data(data_list):
             continue
         
         # 4. 去重（基于内容哈希）
-        if is_duplicate(sample, filtered):
+        if is_duplicate(sample, seen_hashes):
             continue
+        seen_hashes.add(content_hash(sample))
         
         filtered.append(sample)
     
@@ -240,6 +245,7 @@ def filter_sft_data(data_list):
 
 ```python
 import random
+import re
 from collections import Counter
 
 def get_tool_type(sample):
@@ -252,7 +258,7 @@ def get_tool_type(sample):
     return "unknown"
 
 def balance_dataset(data_list):
-    """平衡数据集的类别分布"""
+    """平衡数据集的类别分布（只做下采样 undersampling）"""
     tool_counts = Counter(get_tool_type(d) for d in data_list)
     print(f"工具分布: {tool_counts}")
     
@@ -268,6 +274,12 @@ def balance_dataset(data_list):
     return balanced
 ```
 
+> **这个实现只支持「下采样」（undersampling）。** 样本多的类别被随机裁到 `总数 / 类别数`，样本少的类别原样保留——所以输出规模只会**变小**，不会变大。
+>
+> **「过采样」（oversampling，少数类重复采样补齐到同一水平）是有意不做的**：把同一条样本复制多份塞进训练集，会让梯度里反复看到同一条轨迹，等于给少数类加权，容易过拟合那几条样本。宁可先去补数据（回到 §12.3 的蒸馏 / 自生成），也不要复制。
+>
+> **还有一个口径问题**：`get_tool_type` 只看**第一个** assistant 消息里的工具名，所以一条「先查天气再查穿衣」的多工具轨迹会被归到「第一个工具」那一类，其余工具的分布信息就丢了。想按工具维度做统计，得先把每条样本展开成「工具 → 出现次数」的计数，再按计数汇总（而不是按样本归类）。
+
 ---
 
 ## 12.5 SFT 训练
@@ -275,24 +287,32 @@ def balance_dataset(data_list):
 ### 12.5.1 使用 verl 进行 SFT
 
 ```bash
-# verl 提供的 SFT 脚本示例
-bash examples/sft/run_qwen2_5_3b_sft.sh
+# verl 自带的 SFT 脚本示例（v0.9.1 里真实存在的那个）
+bash examples/sft/gsm8k/run_qwen2_5_0_5b_fsdp.sh
 ```
+
+> 注意：verl 仓库里**没有**「3B 模型单文件 SFT 脚本」这种写法（网上流传的那个 3B 版脚本名并不存在）。`examples/sft/` 下面按数据集分目录（`gsm8k/`、`multiturn/` 等），脚本名带模型和并行策略后缀。抄脚本路径前先 `ls examples/sft/` 看一眼。
 
 ### 12.5.2 关键超参数
 
 | 参数 | 推荐值 | 说明 |
 |------|--------|------|
-| learning_rate | 1e-5 ~ 5e-6 | SFT 学习率 |
-| epochs | 2-5 | 训练轮数 |
+| learning_rate | 1e-5 ~ 5e-5 | SFT 学习率 |
+| epochs | 5 | 训练轮数 |
 | batch_size | 4-8 | 批大小 |
 | max_seq_length | 4096-8192 | 最大序列长度 |
 | warmup_ratio | 0.05 | 预热比例 |
 | weight_decay | 0.01 | 权重衰减 |
 
+> **学习率与轮数（全书统一口径）**：SFT 用 **1e-5 ~ 5e-5**、**5 个 epoch**；GRPO 用 **1e-6**、**3 个 epoch**。
+> 本仓库的 `minimal-verl/` 示例取的是 **5e-5**，理由是它的数据集很小（几百条）+ 模型只有 0.5B，需要更大的步长才能在少数几个 epoch 内收敛；**数据量一大就要往下调**（1e-5 更稳）。反过来说，SFT 阶段的学习率比 GRPO 高两个数量级不是笔误——RL 阶段动的是策略本身，步子必须小。
+> verl 的 GRPO 学习率记得显式写：`actor_rollout_ref.actor.optim.lr=1e-6`（见 [11 - 训练框架选型与搭建](./11-训练框架选型与搭建.md)）。
+
 ### 12.5.3 SFT 后的验证
 
 ```python
+import re
+
 from transformers import AutoTokenizer
 
 def has_correct_format(generated):
@@ -303,6 +323,17 @@ def has_valid_tool_call(generated):
     """检查回复是否包含合法的 JSON 工具调用"""
     return re.search(r'\{["\']name["\']\s*:\s*["\']\w+["\']', generated) is not None
 
+def has_quality_issue(generated):
+    """粗略的生成质量检查：空输出 / 退化重复"""
+    text = generated.strip()
+    if not text:
+        return True
+    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+    # 同一行连续出现 3 次以上，视为模型卡在循环里
+    if len(lines) >= 3 and len(set(lines)) == 1:
+        return True
+    return False
+
 def evaluate_sft_model(model, tokenizer, test_data, max_length=2048):
     """评估 SFT 模型"""
     metrics = {
@@ -310,9 +341,16 @@ def evaluate_sft_model(model, tokenizer, test_data, max_length=2048):
         "tool_call_accuracy": 0,
         "response_quality": 0,
     }
+    tool_call_total = 0   # 需要工具调用的样本数（tool_call_accuracy 的分母）
     
     for sample in test_data:
-        input_text = sample["messages"][-1]["content"]
+        # 输入必须是 user 那一轮：chat 样本的 messages[-1] 是 assistant 的标准答案，
+        # 拿它当输入等于把答案喂回给模型
+        user_texts = [m["content"] for m in sample["messages"] if m["role"] == "user"]
+        if not user_texts:
+            continue
+        input_text = user_texts[-1]
+        
         inputs = tokenizer(input_text, return_tensors="pt", truncation=True, max_length=max_length)
         outputs = model.generate(**inputs, max_new_tokens=512)
         generated = tokenizer.decode(outputs[0], skip_special_tokens=True)
@@ -321,16 +359,27 @@ def evaluate_sft_model(model, tokenizer, test_data, max_length=2048):
         if has_correct_format(generated):
             metrics["format_accuracy"] += 1
         
+        if not has_quality_issue(generated):
+            metrics["response_quality"] += 1
+        
         if '<think>' in expected and '</think>' in expected:
+            tool_call_total += 1
             if has_valid_tool_call(generated):
                 metrics["tool_call_accuracy"] += 1
     
-    n = len(test_data)
-    for key in metrics:
-        metrics[key] /= n
+    n = max(len(test_data), 1)
+    metrics["format_accuracy"] /= n
+    metrics["response_quality"] /= n
+    # 工具调用准确率的分母是「需要工具调用的样本数」，不是全部样本数
+    metrics["tool_call_accuracy"] /= tool_call_total if tool_call_total else 1
+    metrics["tool_call_total"] = tool_call_total
     
     return metrics
 ```
+
+> **`response_quality` 是怎么算的**：上面用 `has_quality_issue` 做了一次最朴素的退化检查（空输出 / 同一行反复刷）。它比「格式对不对」弱得多，只适合当**冒烟指标**——真要评回答质量，得换成任务相关的判据（答案是否正确、工具参数是否合法，见 [14 - 奖励函数设计与实现](./14-奖励函数设计与实现.md)）。
+>
+> **`tool_call_accuracy` 的分母不是全部样本**：只有标准答案里带 `<think>` 标签（也就是本来就该出工具调用）的样本才计入分母，所以这个数是「该出工具调用时出对了的比例」，不是「全部样本里有多少工具调用是对的」。
 
 ---
 
@@ -373,7 +422,7 @@ prepare_for_verl("raw_data.json", "verl_data.json")
 | Distillation | 蒸馏（大模型知识迁移到小模型） |
 | Teacher Model / Student Model | 教师模型 / 学生模型 |
 | Self-Instruct | 自指令生成 |
-| Undersampling / Oversampling | 下采样 / 过采样 |
+| Undersampling / Oversampling | 下采样 / 过采样（本章只实现下采样，见 §12.4.2） |
 | Seed Data | 种子数据 |
 | Data Preprocessing | 数据预处理 |
 
@@ -384,4 +433,5 @@ prepare_for_verl("raw_data.json", "verl_data.json")
 - SFT 是 Agentic RL 的第一步，教模型基本的工具调用格式
 - 数据质量 > 数据数量，100 条高质量数据 > 10000 条低质量数据
 - 大模型蒸馏（Distillation）是最高效的数据构建方式
+- 超参口径（全书统一）：SFT 学习率 **1e-5 ~ 5e-5**、**5 个 epoch**；GRPO 学习率 **1e-6**、**3 个 epoch**
 - 下一步：搭建训练环境 → [13 - 训练环境搭建](./13-训练环境搭建.md)

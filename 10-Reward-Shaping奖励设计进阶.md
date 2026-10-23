@@ -4,6 +4,21 @@
 
 ---
 
+## 目录
+
+- [10.1 为什么需要 Reward Shaping？](#101-为什么需要-reward-shaping)
+- [10.2 奖励函数的分层设计](#102-奖励函数的分层设计)
+- [10.3 信用分配（Credit Assignment）](#103-信用分配credit-assignment)
+- [10.4 TIPS: Turn-level Information-Potential Reward Shaping](#104-tips-turn-level-information-potential-reward-shaping)
+- [10.5 Process Reward Model（PRM，过程奖励模型）](#105-process-reward-modelprm过程奖励模型)
+- [10.6 奖励归一化（Reward Normalization）](#106-奖励归一化reward-normalization)
+- [10.7 奖励设计最佳实践](#107-奖励设计最佳实践)
+- [10.8 术语速查](#108-术语速查)
+- [10.9 小结](#109-小结)
+- [练习题](#练习题)
+
+---
+
 ## 10.1 为什么需要 Reward Shaping？
 
 在 Agentic RL 中，最常见的问题是 **Sparse Reward（稀疏奖励）**：
@@ -33,7 +48,7 @@ Layer 3: Task Reward（任务奖励）
 
 Layer 2: Progress Reward（进度奖励）
   └→ 衡量 Agent 离目标有多近
-  └→ 例：调用了正确的 API +0.2，获得了有用的搜索结果 +0.1
+  └→ 例：成功的工具调用 +0.05，获得了有用的搜索结果 +0.1
 
 Layer 1: Behavior Reward（行为奖励）
   └→ 鼓励良好的行为模式
@@ -44,7 +59,12 @@ Layer 1: Behavior Reward（行为奖励）
 
 ```python
 def layered_reward(trajectory):
-    """三层奖励函数"""
+    """三层奖励函数
+
+    trajectory 采用 dict 风格（本教程统一约定）：
+      {"steps": [...], "actions": [...], "final_state": {...}}
+    每个 step 也是 dict：{"type": ..., "successful": ..., ...}
+    """
     reward = 0.0
     
     # Layer 3: 任务结果
@@ -54,10 +74,10 @@ def layered_reward(trajectory):
         reward += 0.3  # 部分进展
     
     # Layer 2: 进度奖励
-    for step in trajectory.steps:
-        if step.type == "tool_call" and step.successful:
+    for step in trajectory.get("steps", []):
+        if step.get("type") == "tool_call" and step.get("successful"):
             reward += 0.05  # 成功的工具调用
-        if step.type == "search" and step.has_relevant_results:
+        if step.get("type") == "search" and step.get("has_relevant_results"):
             reward += 0.1  # 有用的搜索结果
     
     # Layer 1: 行为奖励
@@ -72,6 +92,11 @@ def layered_reward(trajectory):
     
     return reward
 ```
+
+> **轨迹对象约定**：本教程统一用 **dict 风格**描述轨迹——
+> `trajectory.get("steps")` / `trajectory.get("actions")` / `trajectory.get("final_state")`，
+> 每个 step 同样是 dict（如 `step.get("type")`、`step.get("successful")`）。
+> 这样轨迹可以直接序列化、跨进程传递，也方便用 `**kwargs` 交给奖励函数（见 09.6.2）。
 
 ---
 
@@ -116,9 +141,10 @@ turn_rewards = {
 def discounted_credit(trajectory, final_reward, gamma=0.9):
     """计算每个步骤的折扣信用"""
     credits = []
-    for i, step in enumerate(trajectory.steps):
+    steps = trajectory.get("steps", [])
+    for i, step in enumerate(steps):
         # 距离最终步骤越远，折扣越大
-        distance = len(trajectory.steps) - 1 - i
+        distance = len(steps) - 1 - i
         credit = final_reward * (gamma ** distance)
         credits.append(credit)
     return credits
@@ -126,23 +152,37 @@ def discounted_credit(trajectory, final_reward, gamma=0.9):
 
 ---
 
-## 10.4 TIPS: Turn-level Reward Shaping
+## 10.4 TIPS: Turn-level Information-Potential Reward Shaping
 
-**TIPS（Turn-level Information-Potential Reward Shaping）** 是 2026 年的重要工作：
+**TIPS（Turn-level Information-Potential Reward Shaping）**（Xie et al., 2026，arXiv:2603.22293）
+是 2026 年的重要工作：
 
 ```
 核心思想：
-为搜索增强的 LLM Agent 提供 Turn-level 的奖励信号，
-利用每轮搜索返回的信息量（Information Potential）来评估该轮的质量。
+为搜索增强的 LLM Agent 提供 Turn-level 的奖励信号。
 
-具体做法：
-1. 每轮搜索后，评估搜索结果与任务的相关性
-2. 相关性高 → 高 turn reward
-3. 相关性低 → 低/负 turn reward
-4. 最终答案正确性 → outcome reward
+具体做法（potential-based reward shaping）：
+1. 用 teacher model 对**正确答案的似然增量**来刻画状态 s 的"信息势"：
+       Φ(s) = teacher model 给出的"正确答案似然"相对于基线的增量
+2. 每一轮搜索后，用势函数的差分作为这一轮的 turn reward：
+       turn_reward = Φ(s') − Φ(s)
+3. 最终答案的正确性 → outcome reward（照常叠加）
+
+关键性质：policy-invariant
 ```
 
-**效果**：在 QA 任务上显著优于纯 Outcome Reward 的 RLVR 基线。
+**为什么是 policy-invariant**：经典结论（Ng et al., 1999）指出，形如
+`r'(s,a,s') = r(s,a,s') + γ·Φ(s') − Φ(s)` 的奖励整形**不改变最优策略**。
+把整形项沿一条轨迹求和，势函数会**望远镜式相消**（γ=1 时精确等于 `Φ(s_T) − Φ(s_0)`），
+整条轨迹的回报只多了一个**与策略无关的常数偏置**——
+不同策略之间的相对优劣没变，最优策略自然也没变，变的只是回报的尺度。
+
+> ⚠️ 这跟"每轮搜索后评估搜索结果相关性 → 相关性高给高 turn reward"是**两回事**：
+> 后者是对**特定动作**加分，会改变最优策略（也因此更容易被 hack）；
+> 前者只加与动作无关的势函数差分，理论上不引入新的最优解。
+> 注意：TIPS 里的 potential 不是"这一轮搜索返回内容与任务的相关程度"，而是**teacher model 对正确答案的似然增量**。
+
+**效果**：在 QA 任务上优于纯 Outcome Reward 的 RLVR 基线。
 
 ---
 
@@ -212,9 +252,15 @@ def exponential_moving_std(values, alpha=0.1):
 
 def normalize_rewards(rewards, method="group"):
     """奖励归一化"""
+    rewards = np.asarray(rewards, dtype=float)
+
     if method == "group":
         mean = np.mean(rewards)
-        std = np.std(rewards) + 1e-8
+        # 组内标准差用 ddof=1（样本标准差），对齐 verl core_algos.py 与 TRL 的 torch.std()
+        # ⚠️ G < 2 时 ddof=1 会返回 NaN（Degrees of Freedom <= 0），
+        #    所以单样本组必须退化为 ddof=0，否则整组优势全变成 NaN。
+        ddof = 1 if len(rewards) > 1 else 0
+        std = np.std(rewards, ddof=ddof) + 1e-8
         return (rewards - mean) / std
     
     elif method == "running":
@@ -225,6 +271,18 @@ def normalize_rewards(rewards, method="group"):
     elif method == "clip":
         return np.clip(rewards, -1.0, 1.0)
 ```
+
+> ⚠️ **ddof 口径必须写清楚**：
+> - `np.std()` 默认 **ddof=0**（总体标准差），`torch.std()` 默认 **ddof=1**（样本标准差）。
+> - verl 的 GRPO 优势归一化（`verl/trainer/ppo/core_algos.py:321,525`）与 TRL
+>   用的都是 **ddof=1**，本章代码与之对齐。
+> - **但 ddof=1 有边界**：G < 2 时 `np.std(..., ddof=1)` 返回 **NaN**
+>   （`Degrees of Freedom <= 0`），整组优势会全部变成 NaN、训练直接崩。
+>   真实实现必须对 **G=1 的组退化为 ddof=0**（上面代码里的 `ddof` 三元式就是干这个的），
+>   或者干脆丢弃 G=1 的样本。
+>
+> 顺带一提：GRPO 用的是**组内相对优势**（减去组内均值再除以组内标准差），
+> 不是"减去全局 baseline"——这正是它不需要 Critic 的原因，见 [08 - GRPO 深度解析](./08-GRPO深度解析.md)。
 
 ---
 
@@ -269,5 +327,46 @@ def normalize_rewards(rewards, method="group"):
 - Reward Shaping 通过添加中间奖励信号解决稀疏奖励问题
 - 三层奖励架构：Task + Progress + Behavior
 - 信用分配是多轮 Agent 训练的关键问题
-- TIPS 和 PRM 提供了 Turn-level 的奖励设计思路
+- TIPS 用 **potential-based shaping**（Φ(s′) − Φ(s)）提供 Turn-level 奖励，policy-invariant
+- PRM 提供了另一条 Turn/Step-level 奖励的思路，但训练期必须本地可计算
+- 奖励归一化要注意 **ddof 口径**（verl/TRL 用 ddof=1，G<2 会 NaN）
 - 下一步：进入训练工程阶段 → [11 - 训练框架选型与搭建](./11-训练框架选型与搭建.md)
+
+---
+
+## 练习题
+
+1. **手算归一化**：一组 4 条轨迹的奖励是 `[1.0, 0.0, 1.0, 0.0]`。
+   分别用 ddof=1 和 ddof=0 算归一化结果，并说明 verl / TRL 选的是哪个、
+   为什么这个选择会改变优势的数值尺度。
+
+2. **ddof 的坑**：G=1 时 `np.std(rewards, ddof=1)` 会返回什么？为什么？
+   真实实现应该怎么处理？请写出那行代码。
+
+3. **三层奖励设计**：给一个"在电商网站上下单"的 Agent 设计 Layer 1 / 2 / 3 奖励。
+   哪一层最容易被 hack？为什么？给出对应的防御。
+
+4. **policy-invariant 的边界**：TIPS 的 turn reward = Φ(s′) − Φ(s)。
+   为什么这种 shaping 不会改变最优策略？如果把 Φ 换成"这一轮搜索返回内容与任务的相关程度"，
+   结论还成立吗？
+
+> **参考答案**：1. mean = 0.5。ddof=1：样本标准差 = `√(1.0/3)` = **0.5774**，
+>    归一化结果 = **[+0.866, −0.866, +0.866, −0.866]**；
+>    ddof=0：总体标准差 = `√(1.0/4)` = **0.5**，归一化结果 = **[+1.0, −1.0, +1.0, −1.0]**。
+>    verl（`core_algos.py:321,525`）与 TRL 用的是 **ddof=1**（`torch.std()` 默认），
+>    本章代码与之对齐。ddof 变小 → 优势被放大 → 有效学习率变高（见 10.6）。
+> 2. 返回 **NaN**，并伴随 `RuntimeWarning: Degrees of Freedom <= 0`——样本标准差要除以 `G−1`，
+>    G=1 时分母为 0。真实实现要么对 G=1 退化为 ddof=0，要么丢弃这类样本：
+>    `ddof = 1 if len(rewards) > 1 else 0`，然后 `std = np.std(rewards, ddof=ddof)`（见 10.6 的代码）。
+> 3. 开放题，参考 10.2 的模板：Layer 3 任务结果（下单成功 +1.0 / 失败 0）；
+>    Layer 2 进度（选对了商品 +0.1、成功调用库存接口 +0.05、填对了地址 +0.05）；
+>    Layer 1 行为（工具调用格式正确 +0.05、思考过程存在 +0.05）。
+>    **最容易 hack 的是 Layer 1**——它与任务成败无关，模型只要学会"摆出正确格式"
+>    就能白拿分，即使最后根本没能下单。防御：把行为奖励的额度压小、设上限、
+>    或者只在 Layer 3 成功的轨迹上才发放（"成功前提下的加分"）。
+> 4. 经典结论（Ng et al., 1999）：`r'(s,a,s') = r(s,a,s') + γΦ(s') − Φ(s)` 是 **policy-invariant** 的，
+>    因为沿轨迹求和时势函数项**望远镜式相消**（γ=1 时 = `Φ(s_T) − Φ(s_0)`），
+>    整条轨迹只多了一个与策略无关的常数偏置，最优策略不变。
+>    换成"搜索结果相关性"就不成立了：相关性依赖于**具体执行了哪次搜索**，
+>    属于"对特定动作加分"，会改变不同动作之间的相对回报，也就可能改变最优策略，
+>    同时给了模型一个可以操纵的目标（多搜、搜关键词作弊）——这是更容易被 hack 的 shaping。

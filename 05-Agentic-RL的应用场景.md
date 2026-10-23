@@ -82,7 +82,7 @@ Agentic RL 应用场景
 **目标**：训练 Agent 阅读 Issue、理解代码库、编写和提交修复代码。
 
 **代表性工作**：
-- **ReTool**（ICLR 2025）：强化学习增强的代码工具使用
+- **ReTool**（ICLR 2026 Poster）：强化学习增强的代码工具使用
 - **SWE-agent**：自动修复 GitHub Issue 的 Agent
 
 **训练环境**：
@@ -99,7 +99,9 @@ Agentic RL 应用场景
 
 **训练环境**：
 - 自定义搜索引擎 API
-- Reasoning Gym：推理训练数据集
+
+**任务 / 数据集生成**：
+- Reasoning Gym：**推理任务与数据集生成库**（可程序化地生成训练任务与可验证答案），它不是可交互的"训练环境"
 
 ### 5.2.4 Mathematics（数学推理）
 
