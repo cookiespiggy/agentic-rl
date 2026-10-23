@@ -100,7 +100,10 @@ class DockerCodeSandbox:
             # Docker 未安装，降级到子进程模式
             return self._fallback_execute(code, stdin_input)
         finally:
-            os.unlink(code_file)
+            try:
+                os.unlink(code_file)
+            except OSError:
+                pass  # 临时文件可能已被清掉，忽略
     
     @staticmethod
     def _limit_resources():
@@ -113,29 +116,38 @@ class DockerCodeSandbox:
             pass
     
     def _fallback_execute(self, code: str, stdin_input: str = "") -> dict:
-        """降级方案：子进程隔离执行（含资源限制）"""
+        """降级方案：子进程隔离执行（含资源限制）
+        
+        比 Docker 弱：没有网络隔离，也没有独立的文件系统视图。
+        只适合本地开发调试，**不要**在训练里长期用。
+        """
         with tempfile.NamedTemporaryFile(
-            mode='w', suffix='.py', delete=True
+            mode='w', suffix='.py', delete=False
         ) as f:
             f.write(code)
-            f.flush()
+            code_file = f.name
+        try:
+            result = subprocess.run(
+                ["python", code_file],
+                input=stdin_input,
+                capture_output=True,
+                text=True,
+                timeout=self.timeout,
+                preexec_fn=self._limit_resources,
+            )
+            return {
+                "stdout": result.stdout,
+                "stderr": result.stderr,
+                "return_code": result.returncode,
+                "success": result.returncode == 0,
+            }
+        except subprocess.TimeoutExpired:
+            return {"stdout": "", "stderr": "Timeout", "return_code": -1, "success": False}
+        finally:
             try:
-                result = subprocess.run(
-                    ["python", f.name],
-                    input=stdin_input,
-                    capture_output=True,
-                    text=True,
-                    timeout=self.timeout,
-                    preexec_fn=self._limit_resources,
-                )
-                return {
-                    "stdout": result.stdout,
-                    "stderr": result.stderr,
-                    "return_code": result.returncode,
-                    "success": result.returncode == 0,
-                }
-            except subprocess.TimeoutExpired:
-                return {"stdout": "", "stderr": "Timeout", "return_code": -1, "success": False}
+                os.unlink(code_file)
+            except OSError:
+                pass
     
     def run_tests(self, code: str, test_cases: list) -> dict:
         """运行多个测试用例
@@ -225,6 +237,8 @@ class SubprocessSandbox:
 
 ### 17.3.1 SFT 数据格式
 
+> **SFT 超参（全书统一）**：学习率 **5e-5**、**5** 个 epoch。GRPO 阶段的学习率是 **1e-6**、**3** 个 epoch（见 §17.4.2）。别把两阶段的设置混用。
+
 ```python
 # Code Agent 的 SFT 训练数据示例
 code_agent_sft_sample = {
@@ -277,14 +291,28 @@ code_agent_sft_sample = {
 
 ### 17.3.2 RL 阶段奖励函数
 
+奖励函数的**调用契约**统一见 [14 章 §14.1](./14-奖励函数设计与实现.md#141-奖励函数契约先读这一节)：签名是 `reward_fn(prompts, completions, **kwargs)`，标准答案从 `kwargs["ground_truth"]` 取（数据集列名），`completions` 在对话模式下是 `list[list[dict]]`，需要先用 `_coerce_to_text` 归一化。
+
+**沙盒从哪来？** TRL 不会传 `sandbox=`——它只传数据集的列名。沙盒是一个进程级的对象（还持有镜像、超时、内存限制），所以用**模块级单例**持有：奖励函数直接用，训练脚本负责在启动前把它建好。
+
 ```python
 """Code Agent RL 奖励函数"""
 import re
 
+from reward_utils import _coerce_to_text  # 见 14 章 §14.1.2
+from sandbox import DockerCodeSandbox    # 见 §17.2.1
 
-def code_agent_reward(completions: list, ground_truths: list,
-                      sandbox=None, **kwargs) -> list:
+# === 模块级沙盒单例 ===
+# TRL 只传数据集列名，不会传 sandbox=（见 14 章 §14.1.2）。
+# 沙盒是进程级对象（持有镜像 / 超时 / 内存限制），所以放模块级。
+SANDBOX = DockerCodeSandbox(image="python:3.11-slim", timeout=30, memory_limit="256m")
+
+
+def code_agent_reward(prompts, completions, **kwargs) -> list[float]:
     """代码 Agent 的多组件奖励函数
+    
+    原签名是 code_agent_reward(completions, ground_truths, sandbox)，
+    现统一到 TRL 契约（原签名改名，语义不变）。
     
     奖励组成：
     - 测试通过率（Test Pass Rate）: passed / total_tests
@@ -294,19 +322,24 @@ def code_agent_reward(completions: list, ground_truths: list,
     - 格式奖励: 正确使用 think 标签 +0.05
     
     Args:
-        completions: Agent 生成的回复列表
-        ground_truths: 测试用例列表
-        sandbox: 代码沙盒实例（用于运行测试）
+        prompts: prompt 列表（对话模式下是 list[list[dict]]）
+        completions: Agent 生成的回复；对话模式下是 list[list[dict]]
+        kwargs: 数据集列。ground_truth 是测试用例列表
+    
+    Returns:
+        每个回复对应的奖励值
     """
+    test_case_sets = kwargs["ground_truth"]
     rewards = []
     
-    for completion, test_cases in zip(completions, ground_truths):
+    for completion, test_cases in zip(completions, test_case_sets):
+        text = _coerce_to_text(completion)
         reward = 0.0
         
         # === 1. 测试通过率（核心信号）===
-        code = extract_code(completion)
-        if code and sandbox:
-            test_result = sandbox.run_tests(code, test_cases)
+        code = extract_code(text)
+        if code and SANDBOX:
+            test_result = SANDBOX.run_tests(code, test_cases)
             pass_rate = test_result["pass_rate"]
             reward += pass_rate  # 0.0 ~ 1.0
             
@@ -318,7 +351,7 @@ def code_agent_reward(completions: list, ground_truths: list,
             reward += 0.1  # 至少写出了代码
         
         # === 2. 自我修复能力 ===
-        if has_self_debugging(completion):
+        if has_self_debugging(text):
             reward += 0.1
         
         # === 3. 代码质量 ===
@@ -326,7 +359,7 @@ def code_agent_reward(completions: list, ground_truths: list,
             reward += 0.05
         
         # === 4. 格式奖励 ===
-        if "<think>" in completion and "</think>" in completion:
+        if "<think>" in text and "</think>" in text:
             reward += 0.05
         
         # 惩罚：没有产出任何代码
@@ -450,6 +483,17 @@ class SWEBenchEvaluator:
         
         # 3. 运行 FAIL_TO_PASS 测试
         fail_to_pass = task.get("FAIL_TO_PASS", [])
+        
+        # 空集合陷阱：all([]) 是 True，
+        # 一个没有 FAIL_TO_PASS 的任务会被判成「已解决」——必须显式挡掉
+        if not fail_to_pass:
+            return {
+                "resolved": False,
+                "instance_id": task["instance_id"],
+                "reason": "no_fail_to_pass_tests",
+                "test_results": {},
+            }
+        
         test_results = self._run_tests(repo_dir, fail_to_pass)
         
         # 4. 判断是否解决
@@ -464,16 +508,38 @@ class SWEBenchEvaluator:
         }
     
     def _setup_repo(self, task: dict, repo_dir: str):
-        """克隆仓库并切换到目标 commit"""
+        """克隆仓库并切换到目标 commit
+        
+        两个必须处理的坑：
+        1) 浅克隆（--depth=100）里可能没有 base_commit。
+           先 fetch 那个 commit 本身，失败再退回完整历史。
+        2) checkout 必须带 check=True。
+           否则 commit 不在浅克隆里时它会静默失败，
+           补丁就打到了一棵错误的树上，评估结果完全不可信。
+        """
         if not os.path.exists(repo_dir):
             subprocess.run(
-                ["git", "clone", "--depth=100",
+                ["git", "clone", "--no-checkout",
                  f"https://github.com/{task['repo']}.git", repo_dir],
-                capture_output=True, timeout=120,
+                capture_output=True, timeout=300, check=True,
             )
+        
+        # 浅克隆里取不到 base_commit 时，直接按 commit 抓一次
+        fetched = subprocess.run(
+            ["git", "fetch", "--depth=1", "origin", task["base_commit"]],
+            cwd=repo_dir, capture_output=True, text=True,
+        )
+        if fetched.returncode != 0:
+            # 该 commit 不在浅历史里，退回完整克隆
+            subprocess.run(
+                ["git", "fetch", "--unshallow"],
+                cwd=repo_dir, capture_output=True, text=True,
+            )
+        
+        # check=True：checkout 失败必须抛出来，不能静默继续
         subprocess.run(
             ["git", "checkout", task["base_commit"]],
-            cwd=repo_dir, capture_output=True,
+            cwd=repo_dir, capture_output=True, text=True, check=True,
         )
     
     def _apply_patch(self, repo_dir: str, patch: str) -> bool:
@@ -532,6 +598,44 @@ class SWEBenchEvaluator:
 
 ### 17.4.2 训练脚本
 
+代码 Agent 的工具是「在沙盒里跑代码」，同样走 verl 的 `multi_turn` 段接入：YAML 声明工具的 schema，Python 文件给实现。
+
+```yaml
+# tools/code_tool.yaml
+- class_name: CodeSandboxTool
+  config:
+    image: python:3.11-slim
+    timeout: 30
+    memory_limit: 256m
+  tool_schema:
+    type: function
+    function:
+      name: run_code
+      description: 在隔离沙盒中执行一段 Python 代码，返回 stdout / stderr / return_code
+      parameters:
+        type: object
+        properties:
+          code:
+            type: string
+            description: 要执行的 Python 代码
+        required:
+          - code
+```
+
+```python
+# tools/code_tool.py —— multi_turn.function_tool_path 指向的文件
+def run_code(code: str) -> dict:
+    """在 Docker 沙盒中执行代码。
+
+    实现见 §17.2.1 的 DockerCodeSandbox。
+    """
+    from sandbox import DockerCodeSandbox
+    # ... 实际工程里应该复用同一个沙盒实例，而不是每次新建
+    ...
+```
+
+训练脚本：
+
 ```bash
 #!/bin/bash
 # run_code_agent.sh —— 用 GRPO 训练 Code Agent
@@ -543,38 +647,90 @@ TRAIN_DATA="data/code_agent_train.jsonl"
 TEST_DATA="data/code_agent_test.jsonl"
 OUTPUT_DIR="checkpoints/code_agent_v1"
 
-python -m verl.trainer.main \
+# 说明（注释写在命令外面——bash 里续行中的 # 会把后面的参数吃掉）：
+# 1) actor_rollout_ref.actor.optim.lr 必须显式写出：该键在不同 verl 版本的有效默认值
+#    不同（v0.9.1 为 1e-6，更早版本为 1e-3），不要依赖默认值。GRPO 统一用 1e-6。
+# 2) data.prompt_key=messages：本章数据集的对话列名是 messages。
+# 3) data.train_batch_size=8：verl 的整除约束是
+#    「train_batch_size × rollout.n 须被 n_gpus 整除」（verl/utils/config.py:123-124），
+#    这里 8 × 4 = 32，可被 1/2/4/8 卡整除。
+#    注意这与 TRL 的约束不同——TRL 要求 generation_batch_size 能被 num_generations 整除。
+
+python -m verl.trainer.main_ppo \
     data.train_files=${TRAIN_DATA} \
     data.val_files=${TEST_DATA} \
+    data.prompt_key=messages \
+    data.train_batch_size=8 \
     data.return_raw_chat=True \
     \
     actor_rollout_ref.model.path=${MODEL_PATH} \
+    actor_rollout_ref.actor.optim.lr=1e-6 \
     actor_rollout_ref.rollout.n=4 \
     actor_rollout_ref.rollout.temperature=0.8 \
-    actor_rollout_ref.rollout.max_new_tokens=2048 \
+    actor_rollout_ref.rollout.response_length=2048 \
     actor_rollout_ref.rollout.mode=async \
     \
-    algorithm=grpo \
-    algorithm.kl_coeff=0.01 \
+    actor_rollout_ref.rollout.multi_turn.enable=true \
+    actor_rollout_ref.rollout.multi_turn.tool_config_path=tools/code_tool.yaml \
+    actor_rollout_ref.rollout.multi_turn.function_tool_path=tools/code_tool.py \
     \
-    trainer.total_epochs=5 \
+    algorithm.adv_estimator=grpo \
+    algorithm.kl_ctrl.kl_coef=0.01 \
+    \
+    trainer.total_epochs=3 \
     trainer.project_name=code_agent_rl \
     trainer.experiment_name=qwen2_5_7b_code \
     trainer.save_freq=1 \
     trainer.test_freq=5 \
-    \
-    tools.code_sandbox.enabled=True \
-    tools.code_sandbox.backend=docker \
-    tools.code_sandbox.timeout=30 \
     \
     trainer.default_local_dir=${OUTPUT_DIR}
 
 echo "Code Agent 训练完成！模型保存在 ${OUTPUT_DIR}"
 ```
 
+**两个容易踩的坑**：
+
+- **入口是 `python -m verl.trainer.main_ppo`**，不是 `verl.trainer.main`——`verl/trainer/` 下没有 `main.py`。
+- **verl 没有 `tools.*.enabled` 这种配置段。** 沙箱是工具，接入方式是 `actor_rollout_ref.rollout.multi_turn.*`；给沙箱单独开一个 `tools.code_sandbox` 配置块并在里面写 `enabled=True`，会被 Hydra 判为未知配置项。沙箱本身的行为（镜像、超时、内存上限）由你自己的 `DockerCodeSandbox` 决定，不在 verl 的配置里。
+
+### 17.4.3 checkpoint 落在哪
+
+verl 按 step 分目录存 checkpoint：
+
+```text
+checkpoints/code_agent_v1/
+└── global_step_150/          # trainer.save_freq=1，每步都存
+    └── actor/                # actor 权重（HF 格式，可直接 from_pretrained）
+```
+
 ---
 
-## 17.5 代表性工作
+## 17.5 本章数据的来源
+
+⚠️ **本章的训练数据必须由你自己准备。** SWE-bench 的实例要从官方仓库拉（需要联网 + 磁盘），自建编程任务集也要自己造题并跑测试——**无法离线获取**。所以本章不提供「跑一下就能生成数据」的脚本。下面给出的是训练脚本实际消费的**数据格式**（`data/code_agent_train.jsonl`）和几条示例记录。
+
+**字段清单**（每行一个 JSON 对象）：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `messages` | list[dict] | 对话历史。**这是 `data.prompt_key` 指向的列**（训练脚本里写的是 `data.prompt_key=messages`）。含 `user`（题目 + 测试用例）、`assistant`（思考 + 工具调用）、`tool`（运行结果） |
+| `ground_truth` | list[dict] | 测试用例列表。奖励函数用 `kwargs["ground_truth"]` 读它（见 [14 章 §14.1](./14-奖励函数设计与实现.md#141-奖励函数契约先读这一节)），每项形如 `{"input": ..., "expected_output": ...}` |
+| `data_source` | str | 数据来源标记，用于分组统计（如 `"coding_tasks"`） |
+| `agent_name` | str | Agent 类型标记（如 `"code_agent"`） |
+
+**示例记录**：
+
+```jsonl
+{"messages": [{"role": "user", "content": "写一个函数求两个列表的交集（去重后排序）。"}], "ground_truth": [{"input": "[1,2,3,4] [3,4,5,6]", "expected_output": "[3, 4]"}], "data_source": "coding_tasks", "agent_name": "code_agent"}
+{"messages": [{"role": "user", "content": "写一个函数判断字符串是否为回文，忽略大小写和非字母字符。"}], "ground_truth": [{"input": "A man, a plan, a canal: Panama", "expected_output": "True"}, {"input": "hello", "expected_output": "False"}], "data_source": "coding_tasks", "agent_name": "code_agent"}
+{"messages": [{"role": "user", "content": "写一个函数返回列表中第二大的元素，元素不足两个时返回 None。"}], "ground_truth": [{"input": "[3, 1, 4, 4, 5]", "expected_output": "4"}, {"input": "[1]", "expected_output": "None"}], "data_source": "coding_tasks", "agent_name": "code_agent"}
+```
+
+> 完整的 `messages` 样例（带 `assistant` / `tool` 往返）见 §17.3.1。
+
+---
+
+## 17.6 代表性工作
 
 | 工作 | 机构 | 特点 |
 |------|------|------|
@@ -584,7 +740,7 @@ echo "Code Agent 训练完成！模型保存在 ${OUTPUT_DIR}"
 
 ---
 
-## 17.6 术语速查
+## 17.7 术语速查
 
 | 英文术语 | 中文注释 |
 |---------|----------|
@@ -598,9 +754,11 @@ echo "Code Agent 训练完成！模型保存在 ${OUTPUT_DIR}"
 
 ---
 
-## 17.7 小结
+## 17.8 小结
 
 - 代码 Agent 需要安全的代码执行环境（Docker 隔离 > 子进程隔离）
-- 奖励设计核心：测试通过率 + 自我修复能力 + 代码质量
+- **模型生成的代码绝不在 trainer 进程内 `exec()`**——必须走容器隔离（[14 章 §14.2.2](./14-奖励函数设计与实现.md) 也强调这一点）
+- 奖励设计核心：测试通过率 + 自我修复能力 + 代码质量；奖励函数签名统一为 `reward_fn(prompts, completions, **kwargs)`（见 [14 章 §14.1](./14-奖励函数设计与实现.md#141-奖励函数契约先读这一节)）
+- 沙盒是进程级对象，用**模块级单例**持有（TRL 不会传 `sandbox=`）
 - SWE-bench 是代码 Agent 的标准评测基准，代码任务建议 7B 模型起步
 - 下一步：搜索 Agent → [18 - 搜索增强Agent训练](./18-搜索增强Agent训练.md)

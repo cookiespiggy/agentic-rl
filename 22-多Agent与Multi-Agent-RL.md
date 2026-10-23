@@ -4,6 +4,36 @@
 
 ---
 
+## 前置知识
+
+> **本章门槛明显高于前面各章，可以按需跳过；需要的概念列在下面。**
+>
+> 第 02 章讲的是**单智能体**的 MDP / POMDP，第 06 章讲的是**单策略**的 PPO、
+> 第 08 章讲的是**单策略 + 组内基线**的 GRPO。本章要用到的概念，
+> **前面各章一个都没有引入**：
+>
+> | 需要的概念 | 一句话解释 | 前面在哪 |
+> |-----------|-----------|---------|
+> | MARL（多智能体强化学习） | 多个策略同时学习，彼此的动作会影响对方的回报 | 未讲 |
+> | CTDE（集中式训练、分散式执行） | 训练时用全局信息算 advantage，执行时每个 Agent 只看自己的观测 | 未讲 |
+> | 集中式 Critic（Centralized Critic） | 一个能看到全局状态的 Q/V 网络，专门用来算每个 Agent 的基线 | 未讲（ch06 的 Critic 是单策略的） |
+> | COMA 反事实基线 | 固定别人的动作、只改自己的动作，看全局回报变了多少，以此算信用分配 | 未讲 |
+> | Self-Play | Agent 和自己的历史版本对弈，借此产生难度递增的训练数据 | 未讲 |
+> | 联合动作空间 | 多个 Agent 的动作组合起来是联合空间，状态转移概率由联合策略决定 | 未讲 |
+>
+> **建议的读法**：
+> - 只想把**单 Agent**的 Agentic RL 跑起来 → 读完
+>   [21 - 异步Rollout与分布式训练](./21-异步Rollout与分布式训练.md) 就可以停；
+> - 想理解 CTDE / 信用分配的**动机**（为什么单 Agent 的 GRPO 复制到多 Agent 上会失效）
+>   → 读 §22.1–§22.3；
+> - 想动手做多 Agent 系统 → 再补 MARL 的经典文献（如 MADDPG、COMA、MAPPO 论文）
+>   和 [06 - PPO算法详解](./06-PPO算法详解.md) 的 value function 部分。
+>
+> 本章的代码是**教学示意**（伪代码级别的多 Agent 框架），不是 verl 的多 Agent API
+> ——verl v0.9.1 没有内置的 multi-agent trainer，多 Agent 编排要自己写。
+
+---
+
 ## 22.1 从单 Agent 到多 Agent
 
 ### 22.1.1 单 Agent 的局限
@@ -53,6 +83,13 @@ class AgentRole:
 
 
 # 定义一个典型的多 Agent 系统角色配置
+#
+# ⚠️ 下面的 model_path 全是**占位**：按你的任务换模型。
+# HuggingFace 上**不存在** `Qwen/Qwen2.5-3B-planner` / `-executor` / `-critic`
+# 或 `Qwen/Qwen2.5-7B-coordinator` 这几个 repo——真正存在的是
+# `Qwen/Qwen2.5-3B` 和 `Qwen/Qwen2.5-7B`。多 Agent 场景里通常的做法是
+# **同一个基座 + 不同角色提示词**（多 LoRA / 多 adapter），而不是找现成的
+# 「planner 专用模型」。
 AGENT_ROLES = {
     "planner": AgentRole(
         name="Planner",
@@ -64,7 +101,7 @@ AGENT_ROLES = {
 3. 为每个子任务指定执行者和优先级
 4. 输出结构化的执行计划""",
         tools=["search", "calculator"],
-        model_path="Qwen/Qwen2.5-3B-planner",
+        model_path="Qwen/Qwen2.5-3B",  # 占位：按你的任务换模型
     ),
     "executor": AgentRole(
         name="Executor",
@@ -75,7 +112,7 @@ AGENT_ROLES = {
 2. 返回执行结果和状态
 3. 如果遇到问题，向 Coordinator 报告""",
         tools=["code_interpreter", "search", "file_system"],
-        model_path="Qwen/Qwen2.5-3B-executor",
+        model_path="Qwen/Qwen2.5-3B",  # 占位：按你的任务换模型
     ),
     "critic": AgentRole(
         name="Critic",
@@ -87,7 +124,7 @@ AGENT_ROLES = {
 3. 如果结果不满意，提出改进建议
 4. 输出评估分数和改进意见""",
         tools=["calculator"],
-        model_path="Qwen/Qwen2.5-3B-critic",
+        model_path="Qwen/Qwen2.5-3B",  # 占位：按你的任务换模型
     ),
     "coordinator": AgentRole(
         name="Coordinator",
@@ -100,7 +137,7 @@ AGENT_ROLES = {
 4. 收集 Critic 的评估反馈
 5. 综合所有结果生成最终输出""",
         tools=[],
-        model_path="Qwen/Qwen2.5-7B-coordinator",  # 协调者用更大模型
+        model_path="Qwen/Qwen2.5-7B",  # 占位：协调者用更大模型
     ),
 }
 ```
@@ -281,15 +318,81 @@ async def summarize_tool_result(result: str, max_chars: int = 2000) -> str:
 ### 22.3.1 独立训练（Independent Training）
 
 ```python
-"""方法一：独立训练 —— 每个 Agent 独立用 GRPO 训练"""
+"""方法一：独立训练 —— 每个 Agent 独立用 GRPO 训练
+
+本章的 Agent 模型接口（`generate_trajectory` / `generate`）是**教学示意**，
+不是某个框架的现成 API；真实实现见 [21 - 异步Rollout与分布式训练](./21-异步Rollout与分布式训练.md)
+§21.2.2 的 AgentLoop。
+"""
+import torch
+
+
+def group_advantages(rewards):
+    """组内优势归一化
+
+    GRPO 用组内均值当基线，优势再除以**样本标准差（ddof=1）**——
+    verl / TRL 都用 torch.std()（默认 ddof=1）。
+    G < 2 或组内奖励全相同时没有相对信号，返回全 0。
+    """
+    r = torch.tensor(list(rewards), dtype=torch.float32)
+    if r.numel() < 2:
+        return torch.zeros_like(r)
+    std = r.std()  # ddof=1
+    if float(std) == 0.0:
+        return torch.zeros_like(r)
+    return (r - r.mean()) / std
+
+
+def compute_grpo_loss(model, trajectories, rewards):
+    """GRPO 损失（本章三种训练方法共用这一份）
+
+    ⚠️ 教学简化版：只保留 GRPO 的核心几步——组内优势归一化 → 每 token 的
+    1/|o_i| 长度归一化。**没有**做 clip、KL 惩罚和重要性采样比。
+    生产环境请直接用 verl 的 `algorithm.adv_estimator=grpo`
+    （见 [21 - 异步Rollout与分布式训练](./21-异步Rollout与分布式训练.md)），
+    那里 advantage 归一化用的也是**样本标准差（ddof=1）**。
+
+    Args:
+        model: 策略模型（nn.Module）
+        trajectories: 同一 prompt 的**一组**轨迹（GRPO 组），长度 G
+        rewards: 与 trajectories 等长的奖励列表
+
+    Returns:
+        torch.Tensor，标量 loss（调用方负责 .backward()）
+    """
+    if len(trajectories) != len(rewards):
+        raise ValueError("trajectories 与 rewards 长度必须一致")
+
+    advantages = group_advantages(rewards)
+
+    total = None
+    for traj, adv in zip(trajectories, advantages):
+        tokens = traj.get("tokens") if isinstance(traj, dict) else None
+        if not tokens:
+            continue  # 拿不到 token 级信息就跳过这一条
+        device = next(model.parameters()).device
+        input_ids = torch.tensor([tokens], dtype=torch.long, device=device)
+        logits = model(input_ids).logits
+        logp = torch.log_softmax(logits[:, :-1], dim=-1)
+        target = input_ids[:, 1:]
+        # 每 token 的 1/|o_i| 长度归一化（DeepSeekMath eq.10）
+        token_logp = logp.gather(-1, target.unsqueeze(-1)).squeeze(-1).mean()
+        loss_i = -adv.detach() * token_logp
+        total = loss_i if total is None else total + loss_i
+
+    if total is None:
+        # 没有一条轨迹带 token 级信息 → 返回 0 梯度的占位 loss
+        return sum(p.sum() for p in model.parameters()) * 0.0
+    return total / len(trajectories)
 
 
 def independent_training(
     agents: dict,           # {"planner": model, "executor": model, ...}
     reward_fns: dict,       # {"planner": fn, "executor": fn, ...}
     training_data: list,    # 训练任务列表
-    num_epochs: int = 5,
-    lr: float = 1e-5,
+    num_epochs: int = 3,
+    group_size: int = 8,
+    lr: float = 1e-6,
 ):
     """独立训练每个 Agent
     
@@ -300,12 +403,10 @@ def independent_training(
         agents: Agent 名称到模型的映射
         reward_fns: Agent 名称到奖励函数的映射
         training_data: 训练任务
-        num_epochs: 训练轮数
-        lr: 学习率
+        num_epochs: 训练轮数（全系列统一：GRPO 用 3）
+        group_size: GRPO 组大小（同一 prompt 采样几条）
+        lr: 学习率（全系列统一：GRPO 用 1e-6）
     """
-    import torch
-    
-    # 每个 Agent 创建独立的优化器
     optimizers = {
         name: torch.optim.AdamW(model.parameters(), lr=lr)
         for name, model in agents.items()
@@ -317,38 +418,69 @@ def independent_training(
                 # 每个 Agent 的梯度清零
                 optimizers[agent_name].zero_grad()
                 
-                # 1. Agent 执行任务（Rollout）
-                trajectory = agent_model.generate_trajectory(task)
+                # 1. Agent 执行任务（Rollout）——同一 prompt 采样 group_size 条
+                trajectories = [
+                    agent_model.generate_trajectory(task) for _ in range(group_size)
+                ]
                 
-                # 2. 计算该 Agent 的独立奖励
-                reward = reward_fns[agent_name](trajectory, task)
+                # 2. 计算该 Agent 的独立奖励（每条 rollout 一个）
+                rewards = [reward_fns[agent_name](t, task) for t in trajectories]
                 
                 # 3. 计算损失并更新（每个 Agent 独立更新）
-                loss = compute_grpo_loss(
-                    agent_model, trajectory, reward
-                )
+                loss = compute_grpo_loss(agent_model, trajectories, rewards)
                 loss.backward()
                 optimizers[agent_name].step()
 ```
 
+> **和 TRL/verl 的奖励函数契约的关系**：本章的 `reward_fns[name](trajectory, task)`
+> 是 **MARL 视角**的奖励函数（吃一条轨迹 + 一个任务，返回一个标量），
+> 方便把信用分配的逻辑讲清楚。要真的挂到 verl / TRL 上时，外面要包一层，
+> 统一成全系列的契约（见
+> [14 - 奖励函数设计与实现](./14-奖励函数设计与实现.md) §14.1）：
+>
+>     def reward_func(prompts, completions, **kwargs) -> list[float]:
+>         """把 MARL 的 reward_fn 包成 TRL/verl 能调的形式"""
+>         rewards = []
+>         for completion in completions:
+>             text = _coerce_to_text(completion)   # completions 可能是 list[list[dict]]
+>             rewards.append(my_reward_fn(text, kwargs.get("task")))
+>         return rewards
+>
+> ground truth 一律从 `kwargs` 取（数据集列名），`trajectories=` / `envs=` 这些
+> **不是 TRL 的参数**，要么做成数据集列，要么走模块级对象——和
+> [18 - 搜索增强Agent训练](./18-搜索增强Agent训练.md) §18.4.1、
+> [19 - 垂直领域Agent训练](./19-垂直领域Agent训练.md) §19.3.2 的做法一致。
+
 ### 22.3.2 集中训练（Centralized Training）
 
 ```python
-"""方法二：集中训练 —— 全局 Reward，所有 Agent 共享"""
+"""方法二：集中训练 —— 全局 Reward，所有 Agent 共享
+
+compute_grpo_loss / group_advantages 定义在 §22.3.1，这里直接复用。
+"""
 
 
 def centralized_training(
     agents: dict,
-    global_reward_fn,     # 全局奖励函数
+    global_reward_fn,     # 全局奖励函数：(all_trajectories, task) -> list[float]
     training_data: list,
-    num_epochs: int = 5,
-    lr: float = 1e-5,
+    num_epochs: int = 3,
+    group_size: int = 8,
+    lr: float = 1e-6,
 ):
     """集中训练
     
     一个全局奖励函数评估所有 Agent 的整体表现，
     所有 Agent 共享同一个奖励信号。
     鼓励协作但信用分配困难。
+    
+    Args:
+        agents: Agent 名称到模型的映射
+        global_reward_fn: 全局奖励函数，返回 G 个奖励（每个 rollout 一个）
+        training_data: 训练任务
+        num_epochs: 训练轮数（全系列统一：GRPO 用 3）
+        group_size: GRPO 组大小
+        lr: 学习率（全系列统一：GRPO 用 1e-6）
     """
     import torch
     
@@ -365,20 +497,21 @@ def centralized_training(
             
             all_trajectories = {}
             
-            # 1. 所有 Agent 协作完成任务
+            # 1. 所有 Agent 协作完成任务（每个 Agent 采样 group_size 条）
             for agent_name, agent_model in agents.items():
-                trajectory = agent_model.generate_trajectory(task)
-                all_trajectories[agent_name] = trajectory
+                all_trajectories[agent_name] = [
+                    agent_model.generate_trajectory(task) for _ in range(group_size)
+                ]
             
-            # 2. 计算全局奖励（评估整体表现）
-            global_reward = global_reward_fn(all_trajectories, task)
+            # 2. 计算全局奖励（评估整体表现）——G 个
+            global_rewards = global_reward_fn(all_trajectories, task)
             
             # 3. 每个 Agent 都用全局奖励更新
             for agent_name, agent_model in agents.items():
                 loss = compute_grpo_loss(
                     agent_model,
                     all_trajectories[agent_name],
-                    global_reward,
+                    global_rewards,
                 )
                 loss.backward()
                 optimizers[agent_name].step()
@@ -387,7 +520,10 @@ def centralized_training(
 ### 22.3.3 CTDE（Centralized Training with Decentralized Execution）
 
 ```python
-"""方法三：CTDE —— 集中训练，分散执行（当前主流方法）"""
+"""方法三：CTDE —— 集中训练，分散执行（当前主流方法）
+
+compute_grpo_loss / group_advantages 定义在 §22.3.1，这里直接复用。
+"""
 import torch
 
 
@@ -400,17 +536,20 @@ class CTDEMultiAgentTrainer:
     这是目前 Multi-Agent RL 的主流方法。
     """
     
-    def __init__(self, agents: dict, critic_model, global_reward_fn, lr: float = 1e-5):
+    def __init__(self, agents: dict, critic_model, global_reward_fn,
+                 group_size: int = 8, lr: float = 1e-6):
         """
         Args:
             agents: Agent 字典 {name: policy_model}
             critic_model: 集中式评论家（训练时使用，执行时不用）
-            global_reward_fn: 全局奖励函数
-            lr: 学习率
+            global_reward_fn: 全局奖励函数，(all_trajectories, task) -> list[float]
+            group_size: GRPO 组大小
+            lr: 学习率（全系列统一：GRPO 用 1e-6）
         """
         self.agents = agents
         self.critic = critic_model  # 集中式 Critic
         self.global_reward_fn = global_reward_fn
+        self.group_size = group_size
         
         # 为每个 Agent 策略和 Critic 分别创建优化器
         self.optimizers = {
@@ -433,8 +572,10 @@ class CTDEMultiAgentTrainer:
         for agent_name, agent_model in self.agents.items():
             # Agent 只能看到自己的观测（不是全局状态）
             local_obs = task.get(f"obs_{agent_name}", task)
-            trajectory = agent_model.generate_trajectory(local_obs)
-            all_trajectories[agent_name] = trajectory
+            # 同一个 prompt 采样 group_size 条轨迹（GRPO 的组）
+            all_trajectories[agent_name] = [
+                agent_model.generate_trajectory(local_obs) for _ in range(self.group_size)
+            ]
             all_observations[agent_name] = local_obs
         
         # === 阶段 2: 集中训练（Centralized Training）===
@@ -445,30 +586,28 @@ class CTDEMultiAgentTrainer:
             "task": task,
         }
         
-        # 计算全局奖励
-        global_reward = self.global_reward_fn(all_trajectories, task)
+        # 计算全局奖励（G 个，每个 rollout 一个）
+        global_rewards = self.global_reward_fn(all_trajectories, task)
         
         # 集中式 Critic 评估每个 Agent 的贡献（信用分配）
-        agent_contributions = self.critic.estimate_contributions(
-            global_state, global_reward
-        )
+        agent_contributions = self.estimate_contributions(global_state, global_rewards)
         
         # === 阶段 3: 更新各 Agent 策略 ===
         losses = {}
         for agent_name, agent_model in self.agents.items():
             # 使用 Critic 分配的贡献作为该 Agent 的奖励
-            agent_reward = agent_contributions.get(agent_name, global_reward)
+            agent_rewards = agent_contributions.get(agent_name, global_rewards)
             
             loss = compute_grpo_loss(
                 agent_model,
                 all_trajectories[agent_name],
-                agent_reward,
+                agent_rewards,
             )
             loss.backward()
             losses[agent_name] = loss.item()
         
         # 更新 Critic（用全局信息）
-        critic_loss = self._update_critic(global_state, global_reward)
+        critic_loss = self._update_critic(global_state, global_rewards)
         
         # 更新所有模型（每个 Agent 用各自的优化器）
         for agent_name in self.agents:
@@ -478,14 +617,53 @@ class CTDEMultiAgentTrainer:
         return {
             "agent_losses": losses,
             "critic_loss": critic_loss,
-            "global_reward": global_reward,
+            "global_reward": global_rewards,
             "contributions": agent_contributions,
         }
     
-    def _update_critic(self, global_state: dict, global_reward: float) -> float:
+    def estimate_contributions(self, global_state: dict, global_reward: list) -> dict:
+        """为每个 Agent 计算反事实信用分配（COMA 风格）
+        
+        ⚠️ 这是 **CTDEMultiAgentTrainer 的方法**（不是模块级函数）——
+        它要用到 self.agents 和 self.critic。
+        反事实基线的具体算法见 §22.3.4 的 counterfactual_credit_assignment。
+        
+        Args:
+            global_state: 全局状态
+            global_reward: list[float]，G 个全局奖励
+        
+        Returns:
+            dict[str, list[float]]：Agent 名 → G 个边际贡献
+        """
+        contributions = {}
+        trajectories = global_state["trajectories"]
+        for agent_name in self.agents:
+            per_rollout = []
+            for r in range(len(global_reward)):
+                # 同一个 rollout index 上所有 Agent 的轨迹
+                same_rollout = {
+                    name: trajs[r] for name, trajs in trajectories.items()
+                }
+                per_rollout.append(
+                    counterfactual_credit_assignment(
+                        global_reward=global_reward[r],
+                        trajectories=same_rollout,
+                        agent_name=agent_name,
+                        critic_model=self.critic,
+                        global_state=global_state,
+                    )
+                )
+            contributions[agent_name] = per_rollout
+        return contributions
+    
+    def _update_critic(self, global_state: dict, global_reward) -> float:
         """更新集中式 Critic"""
         predicted_value = self.critic(global_state)
-        critic_loss = (predicted_value - global_reward) ** 2
+        target = torch.tensor(
+            global_reward if isinstance(global_reward, list) else [global_reward],
+            dtype=torch.float32,
+        ).mean()
+        critic_loss = (predicted_value - target) ** 2
         critic_loss.backward()
         return critic_loss.item()
     
@@ -513,6 +691,7 @@ COMA（Counterfactual Multi-Agent Policy Gradients）通过"反事实基线"解�
 计算"如果 Agent 采取了不同动作，全局奖励会如何变化"。
 这个差值就是该 Agent 的边际贡献。
 """
+import torch
 
 
 def counterfactual_credit_assignment(
@@ -522,11 +701,11 @@ def counterfactual_credit_assignment(
     critic_model,
     global_state: dict,
 ) -> float:
-    """计算单个 Agent 的边际贡献（反事实基线）
+    """计算单个 Agent 在某一条 rollout 上的边际贡献（反事实基线）
     
     Args:
-        global_reward: 实际全局奖励
-        trajectories: 所有 Agent 的轨迹
+        global_reward: 实际全局奖励（标量）
+        trajectories: 同一条 rollout 上所有 Agent 的轨迹，dict[agent_name] -> trajectory
         agent_name: 要评估的 Agent
         critic_model: 集中式 Critic（可估计任意动作组合的价值）
         global_state: 全局状态
@@ -558,22 +737,11 @@ def counterfactual_credit_assignment(
     # 归一化到全局奖励尺度
     contribution_ratio = torch.sigmoid(marginal_contribution)
     return (contribution_ratio * global_reward).item()
-
-
-# 在 CTDE 训练中使用（替换原来的抽象方法）:
-def estimate_contributions(self, global_state, global_reward):
-    """为每个 Agent 计算反事实信用分配"""
-    contributions = {}
-    for agent_name in self.agents:
-        contributions[agent_name] = counterfactual_credit_assignment(
-            global_reward=global_reward,
-            trajectories=global_state["trajectories"],
-            agent_name=agent_name,
-            critic_model=self.critic,
-            global_state=global_state,
-        )
-    return contributions
 ```
+
+> **作用域说明**：`estimate_contributions` 是 **CTDEMultiAgentTrainer 的方法**
+> （见 §22.3.3），不是模块级函数——它要用到 `self.agents` 和 `self.critic`。
+> 本节只提供它调用的底层算子 `counterfactual_credit_assignment`。
 
 ---
 
@@ -585,8 +753,12 @@ Self-Play 让 Agent 与自己的历史版本交互，生成高质量的训练数
 类似 AlphaGo 的训练方式，在 Agentic RL 中用于提升 Agent 的对抗和协作能力。
 
 ```python
-"""Self-Play 训练框架"""
+"""Self-Play 训练框架
+
+compute_grpo_loss 定义在 §22.3.1，这里直接复用。
+"""
 import copy
+import torch
 from collections import deque
 
 
@@ -604,14 +776,22 @@ class SelfPlayTrainer:
     - Agent 不断挑战更强的对手
     """
     
-    def __init__(self, agent_model, opponent_pool_size: int = 5):
+    def __init__(self, agent_model, opponent_pool_size: int = 5,
+                 group_size: int = 8, lr: float = 1e-6):
         """
         Args:
             agent_model: 当前 Agent 模型
             opponent_pool_size: 历史版本池大小
+            group_size: GRPO 组大小（每个任务采多少条对局）
+            lr: 学习率（全系列统一：GRPO 用 1e-6）
         """
         self.current_model = agent_model
         self.opponent_pool = deque(maxlen=opponent_pool_size)
+        self.group_size = group_size
+        self._num_tasks_seen = 0
+        
+        # 只有当前模型在更新（对手池里的模型是冻结的历史版本）
+        self.optimizer = torch.optim.AdamW(agent_model.parameters(), lr=lr)
         
         # 初始化对手池（用初始模型）
         for _ in range(opponent_pool_size):
@@ -658,20 +838,21 @@ class SelfPlayTrainer:
             "reward": reward,
         }
     
-    def train_step(self, tasks: list, num_rounds: int = 10):
+    def train_step(self, tasks: list):
         """Self-Play 训练步骤"""
         for task in tasks:
-            for _ in range(num_rounds):
-                result = self.self_play_round(task)
-                
-                # 用 GRPO 更新当前模型
-                loss = compute_grpo_loss(
-                    self.current_model,
-                    result["current_response"],
-                    result["reward"],
-                )
-                loss.backward()
-                self.optimizer.step()
+            # 采一组对局，凑成 GRPO 的组（组内才有相对优势信号）
+            results = [self.self_play_round(task) for _ in range(self.group_size)]
+            
+            responses = [r["current_response"] for r in results]
+            rewards = [r["reward"] for r in results]
+            
+            # 用 GRPO 更新当前模型
+            loss = compute_grpo_loss(self.current_model, responses, rewards)
+            loss.backward()
+            self.optimizer.step()
+            
+            self._num_tasks_seen += 1
         
         # 将更新后的模型加入对手池
         self.opponent_pool.append(copy.deepcopy(self.current_model))
@@ -707,6 +888,12 @@ class SelfPlayTrainer:
         return 0.5 + 0.5 * info_density
     
     def get_training_stats(self) -> dict:
+        """返回训练统计信息"""
+        return {
+            "num_tasks_seen": self._num_tasks_seen,
+            "opponent_pool_size": len(self.opponent_pool),
+            "group_size": self.group_size,
+        }
 ```
 
 ---
@@ -805,6 +992,7 @@ class LLMWorldModel:
             trajectories: 轨迹列表，每条包含
                 (conversation, tool_call, actual_env_response)
         """
+        from datasets import Dataset
         from transformers import Trainer, TrainingArguments
         
         # 构造训练数据：输入 = (历史 + 工具调用)，输出 = 环境响应
@@ -813,19 +1001,23 @@ class LLMWorldModel:
             prompt = self._build_prediction_prompt(conv, tool_call)
             train_texts.append(prompt + " " + env_resp)
         
+        # HF Trainer 要求 datasets.Dataset，不能直接喂 list[str]
+        train_dataset = Dataset.from_dict({"text": train_texts})
+        
         # 用 SFT 方式训练 World Model
+        # 学习率 5e-5、epoch 5 —— 与全系列统一口径一致（SFT 5e-5 / 5 epoch）
         training_args = TrainingArguments(
             output_dir="./world_model_checkpoints",
-            num_train_epochs=3,
+            num_train_epochs=5,
             per_device_train_batch_size=4,
-            learning_rate=2e-5,
+            learning_rate=5e-5,
             save_steps=500,
         )
         
         trainer = Trainer(
             model=self.model,
             args=training_args,
-            train_dataset=train_texts,  # 简化示意
+            train_dataset=train_dataset,
         )
         trainer.train()
     
@@ -875,6 +1067,26 @@ class LLMWorldModel:
 ```bash
 #!/bin/bash
 # run_multi_agent.sh —— 多 Agent 协作训练示例
+#
+# ⚠️ verl 训练需要 CUDA 环境；本仓库没有 CI 在跑这段脚本，下面的键只做过离线核对。
+#
+# --- verl 必填项（这 4 个键务必显式写出）---
+#   actor_rollout_ref.actor.optim.lr=1e-6
+#       该键在不同 verl 版本的有效默认值不同（v0.9.1 是 1e-6，更早版本是 1e-3），
+#       所以不要依赖默认值，必须显式写。
+#   data.prompt_key=messages
+#       数据集里对话列的列名。
+#   data.train_batch_size=32
+#   actor_rollout_ref.rollout.n=8
+#       verl 的整除约束：train_batch_size × rollout.n 须被 n_gpus 整除
+#       （verl/utils/config.py:123-124），这里 32 × 8 = 256，8 卡时每卡 32 条。
+#       ⚠️ 这和 TRL 的规则**不同**：TRL 要求 generation_batch_size
+#       （= per_device_train_batch_size × num_processes × steps_per_generation）
+#       能被 num_generations 整除。两套规则不要混用。
+#
+# --- bash 小坑 ---
+#   反斜杠续行（`\`）里的 `#` **不是注释**，会被当成普通参数传给命令。
+#   所以下面的命令内部一行注释都没有，注释全部写在命令开始之前。
 
 set -e
 
@@ -885,6 +1097,7 @@ COORDINATOR_MODEL="Qwen/Qwen2.5-7B"  # 协调者用更大模型
 
 TRAIN_DATA="data/multi_agent_train.jsonl"
 OUTPUT_DIR="checkpoints/multi_agent_v1"
+CKPT_STEP=100  # 阶段 1 结束后要加载的 global_step
 
 echo "===== Multi-Agent RL 训练 ====="
 echo "Planner:  ${PLANNER_MODEL}"
@@ -894,27 +1107,37 @@ echo "Coordinator: ${COORDINATOR_MODEL}"
 
 # 阶段 1: 独立训练各 Agent
 for role in planner executor critic; do
+    case ${role} in
+        planner)  ROLE_MODEL=${PLANNER_MODEL} ;;
+        executor) ROLE_MODEL=${EXECUTOR_MODEL} ;;
+        critic)   ROLE_MODEL=${CRITIC_MODEL} ;;
+    esac
     echo "--- 训练 ${role} ---"
-    python -m verl.trainer.main \
+    python -m verl.trainer.main_ppo \
         data.train_files=data/${role}_train.jsonl \
-        actor_rollout_ref.model.path=Qwen/Qwen2.5-3B \
+        data.prompt_key=messages \
+        data.train_batch_size=32 \
+        actor_rollout_ref.model.path=${ROLE_MODEL} \
+        actor_rollout_ref.actor.optim.lr=1e-6 \
         actor_rollout_ref.rollout.n=8 \
-        algorithm=grpo \
+        algorithm.adv_estimator=grpo \
         trainer.total_epochs=3 \
         trainer.project_name=multi_agent_${role} \
         trainer.default_local_dir=${OUTPUT_DIR}/${role}
 done
 
 # 阶段 2: CTDE 联合训练
+# verl 的 checkpoint 落在 <default_local_dir>/global_step_<N>/actor，
+# 所以模型路径要带上 global_step_${CKPT_STEP}/actor 这一段
 echo "--- CTDE 联合训练 ---"
 python train_ctde.py \
-    --planner_model=${OUTPUT_DIR}/planner \
-    --executor_model=${OUTPUT_DIR}/executor \
-    --critic_model=${OUTPUT_DIR}/critic \
+    --planner_model=${OUTPUT_DIR}/planner/global_step_${CKPT_STEP}/actor \
+    --executor_model=${OUTPUT_DIR}/executor/global_step_${CKPT_STEP}/actor \
+    --critic_model=${OUTPUT_DIR}/critic/global_step_${CKPT_STEP}/actor \
     --coordinator_model=${COORDINATOR_MODEL} \
     --train_data=${TRAIN_DATA} \
     --output_dir=${OUTPUT_DIR}/ctde \
-    --num_epochs=5
+    --num_epochs=3
 
 echo "Multi-Agent 训练完成！模型保存在 ${OUTPUT_DIR}"
 ```

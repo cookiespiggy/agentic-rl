@@ -69,7 +69,8 @@ async_time = asyncio.run(async_rollout(num_rollouts))
 print(f"同步 Rollout ({num_rollouts} 条): {sync_time:.1f}s")
 print(f"异步 Rollout ({num_rollouts} 条): {async_time:.1f}s")
 print(f"加速比: {sync_time / async_time:.1f}x")
-# 典型输出: 加速比 3-5x
+# 典型输出: 同步 20.0s / 异步 2.5s → 加速比 8.0x
+# （同步 = 8 × (0.5 生成 + 2.0 等工具) = 20.0s；异步 8 条并发，总耗时 ≈ 2.5s）
 ```
 
 ---
@@ -80,9 +81,13 @@ print(f"加速比: {sync_time / async_time:.1f}x")
 
 | 组件 | 角色 | 说明 |
 |------|------|------|
-| AgentLoop | 客户端（Client） | 执行 Agent 逻辑、工具调用 |
-| LLMServerClient | 推理网关 | 提供 generate 接口给 AgentLoop |
-| AsyncServer | 服务端（Server） | 连接推理引擎的 DP group |
+| `AgentLoopBase` | 客户端（Client） | 执行 Agent 逻辑、工具调用（`verl/experimental/agent_loop/agent_loop.py`） |
+| `LLMServerClient` | 推理网关 | 提供 generate 接口给 AgentLoop（`verl/workers/rollout/llm_server.py`） |
+| `FullyAsyncLLMServerClient` | 全异步服务端 | 连接推理引擎的 DP group，做真正的「生成与训练解耦」 |
+
+> verl v0.9.1 里**没有** `AsyncServer` 这个类，也没有 `AgentLoop` 这个基类名——
+> 真实的类名是 `AgentLoopBase`（Agent 循环基类）、`LLMServerClient`（同步/半异步网关）
+> 和 `FullyAsyncLLMServerClient`（全异步网关）。
 
 ### 21.2.2 Agent Loop 核心实现
 
@@ -91,13 +96,18 @@ print(f"加速比: {sync_time / async_time:.1f}x")
 
 展示异步 Rollout 的关键流程：
 Agent 发起推理请求 → 工具调用 → 多轮交互 → 收集轨迹
+
+注意：这是**按 verl 的设计写的教学简化版**，不是 verl 源码。
+verl 真实的基类叫 `AgentLoopBase`（见 verl/experimental/agent_loop/agent_loop.py），
+推理网关叫 `LLMServerClient` / `FullyAsyncLLMServerClient`
+（见 verl/workers/rollout/llm_server.py）。
 """
 import asyncio
 from typing import Callable, Optional
 
 
 class AgentLoop:
-    """verl 的 Agent Loop 实现（简化版）
+    """Agent Loop 实现（简化版，参考 verl 的 AgentLoopBase）
     
     核心设计：
     1. Agent 和推理引擎（Server）分离
@@ -108,7 +118,7 @@ class AgentLoop:
     def __init__(self, llm_client, tools: dict, max_turns: int = 10):
         """
         Args:
-            llm_client: 推理引擎客户端（连接 AsyncServer）
+            llm_client: 推理引擎客户端（连接 LLMServerClient / FullyAsyncLLMServerClient）
             tools: 可用工具字典 {"tool_name": callable}
             max_turns: 最大交互轮数
         """
@@ -355,15 +365,24 @@ def setup_fsdp(model, config):
 
 
 # FSDP 配置（YAML 格式，verl 使用）
+#
+# ⚠️ 下面这段是**示意（非 verl 配置键）**，用的是 PyTorch FSDP 的原生参数名，
+# 只用来说明「verl 的 fsdp 策略背后对应哪些 FSDP 概念」。
+# verl 自己**没有** fsdp.sharding_strategy / fsdp.cpu_offload /
+# fsdp.mixed_precision / fsdp.backward_prefetch 这些顶层键；
+# verl v0.9.1 里相关的是：
+#   actor_rollout_ref.actor.strategy=fsdp
+#   actor_rollout_ref.ref.strategy=fsdp
+#   actor_rollout_ref.actor.fsdp_config.*     # offload / prefetch 等子项
+#   actor_rollout_ref.ref.fsdp_config.*        # 参考模型同上
+# 具体的子项名字以你本地的 verl/trainer/config/_generated_ppo_trainer.yaml 为准。
 fsdp_config = """
-actor_rollout_ref:
-  strategy: fsdp
-  fsdp:
-    sharding_strategy: FULL_SHARD       # 全分片
-    cpu_offload: false                   # 是否将非活跃参数卸载到 CPU
-    mixed_precision: bf16                # 混合精度（推荐 bf16）
-    backward_prefetch: BACKWARD_PRE      # 反向传播预取
-    forward_prefetch: true               # 前向传播预取
+# 示意（非 verl 配置键）—— PyTorch FSDP 的原生参数
+sharding_strategy: FULL_SHARD       # 全分片
+cpu_offload: false                  # 是否将非活跃参数卸载到 CPU
+mixed_precision: bf16               # 混合精度（推荐 bf16）
+backward_prefetch: BACKWARD_PRE     # 反向传播预取
+forward_prefetch: true              # 前向传播预取
 """
 ```
 
@@ -401,22 +420,29 @@ def init_ray_cluster(num_gpus: int = 4, num_cpus: int = 32):
 
 
 # Ray Worker 配置（YAML 格式）
+#
+# ⚠️ 下面这段是**示意（非 verl 配置键）**。verl v0.9.1 里
+# `ray_kwargs.ray_init` 只有 `num_cpus` 和 `runtime_env.py_executable`，
+# **没有** `num_workers` / `max_restarts` / `health_check_interval` /
+# `restart_delay` 这四个键，也没有 `ray.rollout.*` / `ray.inference.*` 这类节点。
+# 重启策略属于 **Ray 自己**的范畴（`ray.init(max_restarts=..., ...)` 或
+# Ray Cluster 的 autoscaler 配置），不在 verl 的 YAML 里配。
 ray_config = """
-ray:
-  num_workers: 4                # Worker 数量（通常 = GPU 数量）
-  num_gpus_per_worker: 1        # 每个 Worker 的 GPU 数
-  num_cpus_per_worker: 8        # 每个 Worker 的 CPU 数
-  
-  # Rollout Workers（负责异步 Rollout）
-  rollout:
-    num_replicas: 2             # Rollout 副本数
-    max_concurrent: 32          # 每个副本最大并发 Rollout 数
-  
-  # Inference Workers（负责推理引擎）
-  inference:
-    engine: sglang              # 推理引擎（sglang 或 vllm）
-    tensor_parallel_size: 2     # 张量并行度
-    max_num_seqs: 256           # 最大并发序列数
+# 示意（非 verl 配置键）—— 这些数字由你自己的 Ray 集群 / 推理服务决定
+num_workers: 4                # Worker 数量（通常 = GPU 数量）
+num_gpus_per_worker: 1        # 每个 Worker 的 GPU 数
+num_cpus_per_worker: 8        # 每个 Worker 的 CPU 数
+
+# Rollout Workers（负责异步 Rollout）
+rollout:
+  num_replicas: 2             # Rollout 副本数
+  max_concurrent: 32          # 每个副本最大并发 Rollout 数
+
+# Inference Workers（负责推理引擎）
+inference:
+  engine: sglang              # 推理引擎（sglang 或 vllm）
+  tensor_parallel_size: 2     # 张量并行度
+  max_num_seqs: 256           # 最大并发序列数
 """
 
 """
@@ -458,32 +484,44 @@ num_replicas 与 max_concurrent 的配比原则：
 | SGLang | 性能更优、支持 RadixAttention | 高吞吐场景 | `pip install sglang[all]` |
 
 ```python
-"""推理引擎配置对比"""
+"""推理引擎配置对比
+
+⚠️ 张量并行度的键是 `rollout.tensor_model_parallel_size`（顶层，**不是**挂在
+vllm 子节点下的写法）；引擎私有的参数一律走 `rollout.engine_kwargs.<engine>.*`
+（vLLM / SGLang 各自透传）。
+"""
 
 # vLLM 配置
 vllm_config = """
 actor_rollout_ref:
   rollout:
-    engine: vllm
-    vllm:
-      tensor_parallel_size: 2      # 张量并行度
-      gpu_memory_utilization: 0.8  # GPU 显存使用率
-      max_num_seqs: 256            # 最大并发序列
-      swap_space: 4                # CPU swap 空间 (GB)
+    name: vllm                 # 引擎名（rollout.name）
+    tensor_model_parallel_size: 2   # 张量并行度
+    engine_kwargs:
+      vllm:
+        gpu_memory_utilization: 0.8  # GPU 显存使用率
+        max_num_seqs: 256             # 最大并发序列
+        swap_space: 4                 # CPU swap 空间 (GB)
 """
 
 # SGLang 配置（推荐，性能更优）
 sglang_config = """
 actor_rollout_ref:
   rollout:
-    engine: sglang
-    sglang:
-      tensor_parallel_size: 2
-      mem_fraction_static: 0.8     # 静态显存分配比例
-      max_running_requests: 256    # 最大并发请求
-      enable_radix_cache: true     # RadixAttention 缓存（减少重复计算）
+    name: sglang
+    tensor_model_parallel_size: 2
+    engine_kwargs:
+      sglang:
+        mem_fraction_static: 0.8     # 静态显存分配比例
+        max_running_requests: 256    # 最大并发请求
+        enable_radix_cache: true     # RadixAttention 缓存（减少重复计算）
 """
 ```
+
+> `engine_kwargs` 下面挂的是**引擎原生的启动参数**，verl 只做透传——
+> 所以这里写什么由 sglang / vllm 的版本决定，键名不对会直接启动失败。
+> 引擎本身是用 `rollout.name` 选的（`vllm` / `sglang`），
+> 这个键请以你本地的 `verl/trainer/config/_generated_ppo_trainer.yaml` 为准。
 
 ### 21.4.2 Load Balancing（负载均衡）
 
@@ -565,9 +603,24 @@ class LoadBalancer:
 
 ### 21.4.3 Batch Size 优化
 
+> ⚠️ **verl 里没有 `rollout_batch_size` 这个键。** 一次迭代实际生成多少条轨迹，
+> 由下面两个键的**乘积**决定：
+>
+> | 概念 | verl 里的键 |
+> |------|-------------|
+> | 每次迭代取多少个 prompt | `data.train_batch_size` |
+> | 每个 prompt 采样几条回复（GRPO 组大小） | `actor_rollout_ref.rollout.n` |
+> | 实际生成的轨迹条数 | `train_batch_size × rollout.n` |
+>
+> 常见的「per-GPU batch size」直觉在 verl 里对应 `data.train_batch_size / n_gpus`
+> （再乘上 `rollout.n` 才是每卡实际生成的条数）。
+> 注意 verl 的整除约束：`train_batch_size × rollout.n` 须被 `n_gpus` 整除
+> （`verl/utils/config.py:123-124`）——这和 TRL 的 `% num_generations` 规则**不同**。
+
 ```
-推荐配置公式：
-  rollout_batch_size = num_gpus × per_gpu_batch_size
+推荐配置公式（按 verl 的真实键写）:
+  data.train_batch_size = n_gpus × per_gpu_batch_size
+  actor_rollout_ref.rollout.n = G            # GRPO 组大小
 
 per_gpu_batch_size 推荐值：
   - 3B 模型:  8-16
@@ -575,12 +628,17 @@ per_gpu_batch_size 推荐值：
   - 14B 模型: 2-4
 
 示例（4 × A100 80G, 7B 模型）：
-  rollout_batch_size = 4 × 8 = 32
-  GRPO group_size = 8
+  data.train_batch_size = 4 × 8 = 32
+  actor_rollout_ref.rollout.n = 8
   → 每次迭代处理 32 / 8 = 4 个不同的 prompt
   → 每个 prompt 采样 8 个回复
-  → 总共生成 32 条轨迹用于训练
+  → 总共生成 32 × 8 = 256 条轨迹用于训练
+  → 整除校验：256 % 4 == 0 ✓
 ```
+
+> **硬件需求**以 [24 - 学习总结与进阶路径](./24-学习总结与进阶路径.md) §24.6.1
+> 的表为准（3B：SFT 1× RTX 4090 24GB，GRPO 2× RTX 4090 或 1× A100 80GB；
+> 24GB 单卡能跑 SFT，GRPO 需要 ≥48GB 显存或开 offload）。
 
 ---
 
@@ -589,6 +647,28 @@ per_gpu_batch_size 推荐值：
 ```bash
 #!/bin/bash
 # run_distributed.sh —— 多 GPU 分布式 Agentic RL 训练
+#
+# ⚠️ verl 训练需要 CUDA 环境；本仓库没有 CI 在跑这段脚本，下面的键只做过离线核对。
+#
+# --- verl 必填项（这 4 个键务必显式写出）---
+#   actor_rollout_ref.actor.optim.lr=1e-6
+#       该键在不同 verl 版本的有效默认值不同（v0.9.1 是 1e-6，更早版本是 1e-3），
+#       所以不要依赖默认值，必须显式写。
+#       （分片策略也是 actor/ref 各自一个键：actor_rollout_ref.actor.strategy、
+#        actor_rollout_ref.ref.strategy，没有 actor_rollout_ref.strategy 这种顶层键）
+#   data.prompt_key=messages
+#       数据集里对话列的列名。
+#   data.train_batch_size=32
+#   actor_rollout_ref.rollout.n=8
+#       verl 的整除约束：train_batch_size × rollout.n 须被 n_gpus 整除
+#       （verl/utils/config.py:123-124），这里 32 × 8 = 256，8 卡时每卡 32 条。
+#       ⚠️ 这和 TRL 的规则**不同**：TRL 要求 generation_batch_size
+#       （= per_device_train_batch_size × num_processes × steps_per_generation）
+#       能被 num_generations 整除。两套规则不要混用。
+#
+# --- bash 小坑（写这个脚本时踩过）---
+#   反斜杠续行（`\`）里的 `#` **不是注释**，会被当成普通参数传给命令。
+#   所以下面这条命令内部一行注释都没有，注释全部写在命令开始之前。
 
 set -e
 
@@ -604,61 +684,75 @@ MODEL_PATH="Qwen/Qwen2.5-7B"
 TRAIN_DATA="data/train.jsonl"
 TEST_DATA="data/test.jsonl"
 OUTPUT_DIR="checkpoints/distributed_v1"
-RESUME_MODE=${RESUME_MODE:-"disable"}  # enable / disable（从上次 checkpoint 恢复）
+# enable / disable（从上次 checkpoint 恢复）
+RESUME_MODE=${RESUME_MODE:-"disable"}
 
 # === 启动分布式训练 ===
+# trainer.max_actor_ckpt_to_keep=3：最多保留 3 个 actor checkpoint
+# trainer.logger 是**列表**（不是可以挂子键的对象），WandB 的项目名/实验名
+# 走顶层的 trainer.project_name / trainer.experiment_name
+# ⚠️ 列表值要整体加引号：trainer.logger='[console,wandb,tensorboard]'，
+#    写成 trainer.logger=['console', 'wandb', 'tensorboard'] 会被 bash 拆成
+#    三个参数，Hydra 直接解析失败
 torchrun \
     --nproc_per_node=${NUM_GPUS_PER_NODE} \
     --nnodes=${NUM_NODES} \
     --master_addr=${MASTER_ADDR} \
     --master_port=${MASTER_PORT} \
-    -m verl.trainer.main \
+    -m verl.trainer.main_ppo \
     \
     data.train_files=${TRAIN_DATA} \
     data.val_files=${TEST_DATA} \
+    data.prompt_key=messages \
+    data.train_batch_size=32 \
     data.return_raw_chat=True \
     \
     actor_rollout_ref.model.path=${MODEL_PATH} \
-    actor_rollout_ref.strategy=fsdp \
+    actor_rollout_ref.actor.strategy=fsdp \
+    actor_rollout_ref.ref.strategy=fsdp \
+    actor_rollout_ref.actor.optim.lr=1e-6 \
     actor_rollout_ref.rollout.n=8 \
     actor_rollout_ref.rollout.temperature=0.8 \
-    actor_rollout_ref.rollout.max_new_tokens=1024 \
+    actor_rollout_ref.rollout.response_length=1024 \
     actor_rollout_ref.rollout.mode=async \
-    actor_rollout_ref.rollout.engine=sglang \
+    actor_rollout_ref.rollout.name=sglang \
+    actor_rollout_ref.rollout.tensor_model_parallel_size=2 \
     \
-    algorithm=grpo \
-    algorithm.kl_coeff=0.01 \
+    algorithm.adv_estimator=grpo \
+    algorithm.kl_ctrl.kl_coef=0.01 \
     \
-    trainer.total_epochs=5 \
+    trainer.total_epochs=3 \
     trainer.project_name=agentic_rl_distributed \
     trainer.experiment_name=qwen2_5_7b_8gpu \
     trainer.save_freq=1 \
     trainer.test_freq=1 \
-    \
-    trainer.per_device_train_batch_size=4 \
-    trainer.gradient_accumulation_steps=2 \
-    \
-    trainer.default_local_dir=${OUTPUT_DIR} \
-    \
-    # === Checkpoint / 容错 ===
     trainer.resume_mode=${RESUME_MODE} \
-    trainer.save_freq=1 \
-    trainer.save_limit=3 \              # 最多保留 3 个 checkpoint
-    trainer.save_total_limit=50 GB \    # checkpoint 磁盘限额
-    \
-    # === 容错配置 ===
-    ray.num_workers=4 \
-    ray.max_restarts=3 \                # Worker 崩溃后最大重启次数
-    ray.health_check_interval=30 \      # 健康检查间隔（秒）
-    ray.restart_delay=10 \              # 崩溃后等待秒数再重启
-    \
-    # === 训练监控 ===
-    trainer.logger=['console', 'wandb', 'tensorboard'] \
-    trainer.logger.wandb.project=agentic_rl_distributed \
-    trainer.logger.wandb.name=qwen2_5_7b_8gpu
+    trainer.max_actor_ckpt_to_keep=3 \
+    trainer.logger='[console,wandb,tensorboard]' \
+    trainer.default_local_dir=${OUTPUT_DIR}
 
-echo "分布式训练完成！模型保存在 ${OUTPUT_DIR}"
+echo "分布式训练完成！模型保存在 ${OUTPUT_DIR}/global_step_<N>/actor"
 ```
+
+> **容错 / 重启策略不在 verl 的 YAML 里。** verl v0.9.1 的
+> `ray_kwargs.ray_init` 只有 `num_cpus` 和 `runtime_env.py_executable`，
+> **没有** `num_workers` / `max_restarts` / `health_check_interval` /
+> `restart_delay` 这四个键。这些是 **Ray 自己的**参数：
+> 在 `ray.init(max_restarts=N, ...)` 里传，或者写进 Ray Cluster 的 autoscaler 配置，
+> 再由 `ray_kwargs.ray_init.runtime_env` 把环境带进 worker。
+>
+> **checkpoint 落盘位置**：verl 把权重写到 `${OUTPUT_DIR}/global_step_<N>/actor`。
+> `trainer.max_actor_ckpt_to_keep=3` 表示最多保留 3 个 actor checkpoint；
+> verl 保留 checkpoint 数量的键只有 `trainer.max_actor_ckpt_to_keep`，没有
+> `save_limit` / `save_total_limit` 那种写法（后者写带空格的 `50 GB` 还会直接让
+> Hydra 解析失败）。
+>
+> **梯度累积**也不在 `trainer.*` 下：verl 没有
+> `trainer.per_device_train_batch_size` / `trainer.gradient_accumulation_steps`
+> （那是 HuggingFace `Trainer` 的键）。verl 用 `data.train_batch_size` 和
+> `actor_rollout_ref.actor.fsdp_config.*` 自行切 micro-batch。
+>
+> `trainer.total_epochs=3` 与全系列统一口径一致（SFT 5 / GRPO 3）。
 
 ---
 
@@ -681,7 +775,7 @@ echo "分布式训练完成！模型保存在 ${OUTPUT_DIR}"
 
 ## 21.7 小结
 
-- 异步 Rollout 解决了 Agent 训练中 GPU 空闲的问题，典型加速 3-5 倍
+- 异步 Rollout 解决了 Agent 训练中 GPU 空闲的问题：§21.1.3 的脚本实测 **8.0×**（同步 20.0 s vs 异步 2.5 s）
 - verl 的 Server-based 架构分离了推理引擎和 Agent 逻辑，使用 asyncio 并发
 - FSDP + Ray 是分布式训练的核心基础设施
 - 推理引擎推荐 SGLang（性能更优），Batch Size 需根据 GPU 和模型大小调整

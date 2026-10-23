@@ -23,49 +23,117 @@
 ### 20.1.2 评估指标
 
 ```python
-def task_completed(model, task):
+"""评估指标计算
+
+说明：这里用的是 **transformers 的真实 API**（`model.generate`），不是某个 Agent
+框架里的 `generate_trajectory`。多轮 Agent 的轨迹收集见
+[21 - 异步Rollout与分布式训练](./21-异步Rollout与分布式训练.md) §21.2.2 的 AgentLoop。
+"""
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+
+def load_model(model_path: str = "Qwen/Qwen2.5-7B", device: str = "cuda"):
+    """加载被评估的模型
+
+    Args:
+        model_path: HuggingFace 模型 id 或本地路径
+        device: 设备（"cuda" / "cpu" / "mps"）
+
+    Returns:
+        (model, tokenizer)
+    """
+    tokenizer = AutoTokenizer.from_pretrained(model_path)
+    model = AutoModelForCausalLM.from_pretrained(
+        model_path,
+        dtype="auto",   # transformers 5.x 里 torch_dtype 已改名成 dtype
+        device_map=device,
+    )
+    model.eval()
+    return model, tokenizer
+
+
+def generate_once(model, tokenizer, prompt: str, max_new_tokens: int = 512) -> str:
+    """对单个 prompt 生成一次回复（真实 API：model.generate）"""
+    inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+    with torch.no_grad():
+        outputs = model.generate(
+            **inputs,
+            max_new_tokens=max_new_tokens,
+            do_sample=False,
+        )
+    # 只解码新生成的部分（去掉 prompt）
+    new_tokens = outputs[0][inputs["input_ids"].shape[1]:]
+    return tokenizer.decode(new_tokens, skip_special_tokens=True)
+
+
+def count_tokens(tokenizer, text: str) -> int:
+    """统计一段文本的 token 数"""
+    return len(tokenizer(text, add_special_tokens=False)["input_ids"])
+
+
+def task_completed(text: str, task: dict) -> bool:
     """检查 Agent 是否成功完成任务"""
-    trajectory = model.generate_trajectory(task["prompt"])
     if "ground_truth" not in task:
         return True
-    return task["ground_truth"] in str(trajectory)
+    return task["ground_truth"] in text
 
 
-def count_steps(model, task):
-    """统计 Agent 完成任务所用的步数"""
-    trajectory = model.generate_trajectory(task["prompt"])
-    return len(trajectory.get("turns", []))
+def count_steps(text: str) -> int:
+    """统计完成任务所用的步数
+
+    这里按「回复里出现了几次工具调用」近似计步（单轮生成至少算 1 步）。
+    多轮 Agent 的真实步数应该从 AgentLoop 的轨迹里取（见 ch21 §21.2.2）。
+    """
+    return max(1, text.count('"name"'))
 
 
-def correct_tool_used(model, task):
-    """检查 Agent 是否使用了正确的工具"""
-    trajectory = model.generate_trajectory(task["prompt"])
+def correct_tool_used(text: str, task: dict) -> bool:
+    """检查 Agent 是否使用了正确的工具（从回复里解析工具调用）"""
     expected_tool = task.get("expected_tool")
     if expected_tool is None:
         return True
-    actual_tools = [c["tool"] for c in trajectory.get("tool_calls", [])]
-    return expected_tool in actual_tools
+    return f'"name": "{expected_tool}"' in text or f'"name":"{expected_tool}"' in text
 
 
-def evaluate_agent(model, test_tasks):
+def evaluate_agent(model, tokenizer, test_tasks):
+    """在测试集上评估一个模型
+
+    关键点：每个任务**只生成一次**，三个指标复用**同一条**轨迹。
+    如果每个指标各生成一次，success_rate / avg_steps / tool_accuracy 描述的
+    是三条不同的轨迹，指标之间不可比，推理成本还翻了三倍。
+    """
     metrics = {}
-    
+
+    # 每个任务只跑一次生成，后面三个指标共用这份结果
+    trajectories = [
+        generate_once(model, tokenizer, task["prompt"])
+        for task in test_tasks
+    ]
+
     # 任务成功率（Task Success Rate）
-    successes = sum(1 for t in test_tasks if task_completed(model, t))
+    successes = sum(
+        1 for task, text in zip(test_tasks, trajectories) if task_completed(text, task)
+    )
     metrics["success_rate"] = successes / len(test_tasks)
-    
+
     # 平均步骤数（Average Steps）
-    all_steps = [count_steps(model, t) for t in test_tasks]
+    all_steps = [count_steps(text) for text in trajectories]
     metrics["avg_steps"] = sum(all_steps) / len(all_steps)
-    
+
     # 工具使用准确率（Tool Use Accuracy）
-    correct_tools = sum(1 for t in test_tasks if correct_tool_used(model, t))
+    correct_tools = sum(
+        1 for task, text in zip(test_tasks, trajectories) if correct_tool_used(text, task)
+    )
     metrics["tool_accuracy"] = correct_tools / len(test_tasks)
-    
+
     # Token 消耗总量（Cost Efficiency）
-    all_tokens = [model.count_tokens(t) for t in test_tasks]
+    all_tokens = [
+        count_tokens(tokenizer, task["prompt"]) + count_tokens(tokenizer, text)
+        for task, text in zip(test_tasks, trajectories)
+    ]
     metrics["avg_tokens"] = sum(all_tokens) / len(all_tokens)
-    
+
     return metrics
 ```
 
@@ -81,7 +149,7 @@ def evaluate_agent(model, test_tasks):
 | WebArena | 800+ | 中等 | 真实网站模拟 |
 | VisualWebArena | 900+ | 较难 | 多模态网页 |
 | OSWorld | 300+ | 困难 | 操作系统级任务 |
-| AgentBench | 300+ | 中等 | 多维度 LLM Agent 评测（含 Web/OS/DB） |
+| AgentBench | 1,091 个任务实例 / 8 个环境 | 中等 | 多维度 LLM Agent 评测（含 Web/OS/DB） |
 | GAIA | 466 | 困难 | 通用 AI 助手多步推理 |
 
 ### 20.2.2 Code（代码）
@@ -173,9 +241,12 @@ def evaluate_with_lm_eval(model_args: str, tasks: list, batch_size: int = 8):
 # 使用示例
 evaluate_with_lm_eval(
     model_args="pretrained=Qwen/Qwen2.5-7B",
-    tasks=["gsm8k", "miniwob_click_test"],
+    tasks=["gsm8k", "miniwob_click-button"],
 )
 ```
+
+> MiniWoB 的**任务名随 lm-eval 版本变化**（有的版本叫 `miniwob_click-button`，
+> 有的写成下划线形式），跑之前用 `lm_eval --tasks list` 确认一下实际注册的名字。
 
 ### 20.3.3 A/B 测试与统计显著性检验
 
@@ -234,7 +305,7 @@ print("结论:", "GRPO 显著优于 Baseline" if p_val < 0.05 else "差异不显
 | 环境 | 部署方式 | 资源需求 | 备注 |
 |------|---------|---------|------|
 | MiniWoB | `pip install miniwob` | 2 CPU, 4GB RAM | 本地浏览器模拟 |
-| WebArena | Docker Compose | 8 CPU, 16GB RAM | 需申请 API key |
+| WebArena | Docker Compose | 8 CPU, 16GB RAM | **完全自托管，不需要申请 API key** |
 | SWE-bench | `pip install swebench` | 4 CPU, 8GB RAM | 需配置 Docker 沙盒 |
 | BrowserGym | `pip install browsergym` | 2 CPU, 4GB RAM | 支持 MiniWoB/WebArena |
 
@@ -257,13 +328,13 @@ CROSS_VALIDATION_TASKS = {
     "search": ["hotpotqa", "2wikimultihopqa"],
 }
 
-def cross_validate(model, task_groups: dict):
+def cross_validate(model, tokenizer, task_groups: dict):
     """在多个 Benchmark 上评估，计算综合得分"""
     all_results = {}
     for group_name, tasks in task_groups.items():
         group_scores = []
         for task in tasks:
-            score = evaluate_agent(model, [{"prompt": task}])
+            score = evaluate_agent(model, tokenizer, [{"prompt": task}])
             group_scores.append(score["success_rate"])
         all_results[group_name] = {
             "scores": group_scores,
@@ -286,7 +357,7 @@ def cross_validate(model, task_groups: dict):
 
 ---
 
-## 20.7 术语速查
+## 20.6 术语速查
 
 | 英文术语 | 中文注释 |
 |---------|---------|
@@ -302,7 +373,7 @@ def cross_validate(model, task_groups: dict):
 
 ---
 
-## 20.8 小结
+## 20.7 小结
 
 - 评估需要多维度：成功率、效率、工具使用准确率等
 - 选择合适的 Benchmark 来衡量你的垂直领域

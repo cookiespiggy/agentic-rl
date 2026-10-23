@@ -48,6 +48,10 @@
         "support": "故障、报错、功能异常",
         "sales": "报价、套餐、采购",
         "general": "以上都不属于"
+      },
+      "annotation_protocol": {
+        "primary_action": "以用户主诉求为准——明确要求执行、且未被「顺便 / 另外」降级的那个动作。仅作背景描述出现的类别词不计入。",
+        "multi_action": "多个诉求并列、无法区分主次时，按「直接经济损失(billing) > 功能不可用(support) > 商务动作(sales) > 一般咨询(general)」取最高优先级。"
       }
     },
     "complexity": {
@@ -59,9 +63,17 @@
       "type": "bool",
       "instructions": "该请求是否应升级到更强模型或人工复核"
     }
+  },
+  "routing": {
+    "cheap_threshold": 0.85,
+    "mid_threshold": 0.6
   }
 }
 ```
+
+> ⚠️ **`routing` 不是可选字段。** 校验器要求顶层必须同时有 `schema_id` / `version` / `questions` / `routing` 四个键，少一个直接抛 `ValueError`。所以写完 schema 模板后，第一件事是拿校验器跑一遍，别等训练脚本才发现。
+>
+> 另外注意：`complexity` 的 `criteria`（`["low","medium","high"]`）在本工程里**没有代码读取**——complexity 头是**连续回归**（用 MAE 评），不是三分类。写 schema 时别让下游误以为这里是闭集标签。
 
 ---
 
@@ -124,3 +136,17 @@ uv run pytest -q tests/test_schema_and_routing.py
 - 下一章进入数据协议：如何保证标注一致性和难例覆盖
 
 下一章：**[28 - 数据工程 I：标注协议与难例覆盖](./28-数据工程I-标注协议与难例覆盖.md)**。
+
+### 本章哪些内容本工程未实现
+
+| 本章内容 | 本工程状态 |
+|---|---|
+| schema 的三段结构（`choice` / `score` / `bool`） | **已实现**（`schemas/v1.json`），但只覆盖**一个 schema、一个垂类** |
+| `routing` 阈值（`cheap_threshold` / `mid_threshold`） | **已实现**（`routing.py`），阈值是**手写常量**，不是从数据学出来的 |
+| **schema 校验** | **只覆盖 `schemas/v1.json`**——校验器写死了 `intent` / `complexity` / `needs_escalation` 三个固定键和它们的类型，**新增字段、换字段名、换类型都会直接抛错**，它不是一个通用的 schema 校验器 |
+| `complexity.criteria`（`["low","medium","high"]`） | **没有任何代码读取**——complexity 头是连续回归（MAE 评），不是闭集三分类 |
+| `intent.annotation_protocol` | **只写进 JSON 当文档**，代码不读；真正的多诉求标注规则硬编码在 `data_builder.py` 里 |
+| 27.4 的三类反模式 | **设计规范**，无自动检查（仓库里只有一条针对规则基线区间的守卫测试） |
+| 「至少 1 个 `choice` + 1 个 `score/bool` 字段」的验收 | **部分实现**——校验器要求三个字段**同时存在**，比本章写的宽松标准更严 |
+
+> 一句话：**schema 的「形状」实现了，「通用性」没有**——本仓库的 schema 是一个写死的样本，不是一个可配置的建模工具。
