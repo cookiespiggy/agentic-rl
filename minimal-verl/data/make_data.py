@@ -2,7 +2,7 @@
 
 设计:
 - 任务: 中文评论 3 分类 (正面 / 负面 / 中性)
-- 数量: 8 训 + 2 测 = 10 条
+- 数量: 8 训 + 3 测 = 11 条
 - 格式: ChatML messages (system / user / assistant)
 - system prompt 约束: 模型必须只输出 "正面" / "负面" / "中性" 三选一
   这是为了让 RL 奖励函数能稳定判断答案 (避免模糊话)
@@ -12,7 +12,7 @@
 
 输出:
     data/sft_train.jsonl   (8 条, SFT + GRPO 训练用)
-    data/sft_test.jsonl    (2 条, 最终评估用)
+    data/sft_test.jsonl    (3 条, 最终评估用)
 """
 import json
 from collections import Counter

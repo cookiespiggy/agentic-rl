@@ -29,6 +29,9 @@ jobs:
       - name: Lint
         run: uv run ruff check src scripts tests
 
+      - name: 未定义名扫描
+        run: uv run ruff check --select F821 src scripts tests
+
       - name: 测试
         run: uv run pytest -q tests
 
@@ -45,11 +48,45 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: 安装 pyyaml（verl 配置快照检查要用）
+        run: pip install pyyaml
+
       # 章节里的「对应工程锚点」链接一旦失效，读者点过去就是 404。
       # 这是教程仓库最容易悄悄腐烂的地方。
       - name: 检查章节相对链接
         run: python tools/check_chapter_links.py
 
+      # 小节编号一旦出现重复或缺号，读者按编号跳转就会迷路。
+      # 历史上 ch20 缺 20.6、ch25 重复 25.6、ch26 缺 26.6。
+      - name: 检查小节编号唯一且连续
+        run: python tools/check_heading_numbers.py
+
+      # 教程里的 verl 训练命令写的是**虚构的 API**（`verl.trainer.main`、
+      # `algorithm=grpo`、`algorithm.kl_coeff`…）。这个检查对照入库的
+      # verl v0.9.1 配置 key 快照，逐一验证每个 Hydra 覆盖项真实存在，
+      # 并且四个必填项（lr / prompt_key / train_batch_size / rollout.n）都写了。
+      - name: 检查 verl 配置项
+        run: python tools/check_verl_configs.py
+
+      # 章节里的 Python 代码块要能解析，并且没有未定义名。
+      - name: 检查章节 Python 代码块
+        run: python tools/check_chapter_python.py
+
       # .gitignore 拦不住「写进代码里的密钥」；而密钥一旦进历史，删文件也没用。
       - name: 扫描凭据（含提交历史）
         run: python tools/check_no_secrets.py --history
+
+      # 报告入库了，读者才能核对文档里的数字。
+      - name: 检查报告已入库
+        run: |
+          n=$(git ls-files minimal-decision-bench/reports | wc -l)
+          echo "已跟踪报告数：$n"
+          [ "$n" -ge 14 ] || { echo "报告入库数量不足（期望 ≥14）"; exit 1; }
+
+      # 内部协作文档（含本地路径）不能进版本库。
+      - name: 检查内部文档未入库
+        run: |
+          if git ls-files | grep -qE "handoff\.md|PROGRESS\.md"; then
+            echo "内部文档被跟踪了"; exit 1
+          fi
+          echo "内部文档均未入库 ✓"

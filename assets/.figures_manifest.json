@@ -1,0 +1,29 @@
+{
+  "figures": {
+    "26-01-quality-vs-cost": {
+      "figure": "26-01-quality-vs-cost.png",
+      "sources": {
+        "latency_benchmark.json": "1f918cd8d24dc9d99492a578903ee6ce20b5fc7ce2b13b690e8e0271e5527845",
+        "cross_validation.json": "2877ae0c63ba09f359fc3680844ff0090423da7460cf9c1b82dfee0b7761b593"
+      }
+    },
+    "28-01-difficulty-layers": {
+      "figure": "28-01-difficulty-layers.png",
+      "sources": {
+        "cross_validation.json": "2877ae0c63ba09f359fc3680844ff0090423da7460cf9c1b82dfee0b7761b593"
+      }
+    },
+    "31-01-cv-stability": {
+      "figure": "31-01-cv-stability.png",
+      "sources": {
+        "cross_validation.json": "2877ae0c63ba09f359fc3680844ff0090423da7460cf9c1b82dfee0b7761b593"
+      }
+    },
+    "31-02-confidence-diagnosis": {
+      "figure": "31-02-confidence-diagnosis.png",
+      "sources": {
+        "confidence_diagnosis.json": "1a60a76995df5d1eef495927141b2110a9d71472fd9349b83c64d99019abd839"
+      }
+    }
+  }
+}

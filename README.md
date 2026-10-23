@@ -1,7 +1,7 @@
 # Agentic RL 零基础教程 · 从概念到 GRPO 实战
 
-> **面向小白的 Agentic RL（智能体强化学习）系统教程** — 33 篇中文 Markdown + 两套可运行工程：
-> TRL 最小示例（[`minimal-verl/`](./minimal-verl/)）与判别模型三方对照实证（[`minimal-decision-bench/`](./minimal-decision-bench/)）。
+> **面向小白的 Agentic RL（智能体强化学习）系统教程** — 33 篇中文 Markdown + 两套**定位不同**的可运行工程：
+> 判别模型三方对照实证（[`minimal-decision-bench/`](./minimal-decision-bench/)，26–33 章数字的来源）与训练工具链最小示例（[`minimal-verl/`](./minimal-verl/)，TRL 栈 / macOS MPS / 单步任务，**不演示 Agentic RL 能力**）。
 >
 > 搜「Agentic RL 教程」「GRPO 入门」「LLM 强化学习」「verl TRL 实战」「Jev 与 RL 的边界」「System One 判别模型」「判别能力外置」都能找到这里。
 
@@ -10,6 +10,17 @@
 [![CI](https://github.com/cookiespiggy/agentic-rl/actions/workflows/ci.yml/badge.svg)](https://github.com/cookiespiggy/agentic-rl/actions/workflows/ci.yml)
 
 > **只想看结论？** → [`minimal-decision-bench/FINDINGS.md`](./minimal-decision-bench/FINDINGS.md)：一页纸说清「这个实证工程证明了什么、没证明什么」。
+
+> **质量分层（先看清楚再往下读）**：本仓库两部分的**证据等级不一样**，不要一视同仁。
+>
+> | 章节 | 性质 | 证据强度 |
+> |---|---|---|
+> | **01–24** | **知识整理 + 示意片段** | 框架 API 是按 verl `0.9.1` / TRL `1.5.1` 的**真实源码**写的，但**训练脚本不在 CI 里执行**——本机无 CUDA，verl 训练、BrowserGym/Docker/SQL 环境**永久无法实机验证**。正确性靠**离线 lint（config key 快照对照）+ 人工核对上游源码**保证 |
+> | **25–33** | **有可复现实验支撑** | **实测**数字来自 [`minimal-decision-bench/`](./minimal-decision-bench/) **入库的 `reports/*.json`**，CI 跑 lint + 单测 + 章节链接检查；口径与统计结论见各章末尾的「本章哪些内容本工程未实现」。**例外**：25 章的 Jev 产品指标是**厂商公开口径，本仓库未独立验证** |
+>
+> 两套工程**不是平行的两条路**，定位不同：
+> - [`minimal-decision-bench/`](./minimal-decision-bench/) —— **判别模型的实证工程**，本 README「实证工程」一节所有数字的来源。
+> - [`minimal-verl/`](./minimal-verl/) —— **训练工具链的最小示例**（TRL 栈 / macOS MPS / 单步任务），它验证的是 *SFT → GRPO → eval 这条链路能不能跑通*，**不是 Agentic RL 能力示例**。它自己的 README 写得很直白：「情感分类本身不需要 Agentic RL……**它是『工具链验证示例』，不是『Agentic RL 能力示例』**」。
 
 ---
 
@@ -72,13 +83,15 @@
 
 | 结论 | 证据 |
 |---|---|
-| 质量上 encoder 与 LLM **统计上无法区分** | 5 折交叉验证 intent F1 `0.9058` vs `0.8967`，差距仅 **0.33 倍标准差** |
-| 但成本差一个量级 | 端到端 P50 `20.67 ms` vs `142.51 ms`；部署体积 `390.6 MB` vs `1728.1 MB` |
+| 质量上 encoder 与 LLM **没有一项指标达到统计显著** | 5 个指标上，依赖校正 + Holm 校正后**没有一个**存活。其中 **escalation Brier 方向 5/5 折一致**（encoder 更优，约 12%），但依赖校正 p=`0.0107`、精确 Wilcoxon p=`0.0625`——**定性为「值得注意但未证实」**，不宣称统计显著 |
+| 但成本差一个量级 | 端到端 P50 `20.67 ms` vs `142.51 ms`（**三个任务模型串行求和**）；部署体积**单任务** `390.6 MB` vs `1728.1 MB`，**三任务合计** `1171.8 MB` vs `5184.3 MB` |
 | **量化后 CPU 比 GPU 还快** | ONNX int8 `4.04 ms` vs MPS fp32 `6.78 ms`（快 1.68 倍），体积压到 1/4（`98.3 MB`） |
 | **置信度门控（级联）完全无效** | 扫 101 个阈值，帕累托前沿只剩 `encoder-only` **一个点** |
 | **数据集难度决定结论** | 早期模板下规则基线 F1 是 `1.0000`（比两个模型都高）——那时证明的是「不需要模型」 |
 
-规模：**13 个脚本 / 33 个报告 / 32 条测试 / 4 张图 / CI 全绿**。
+> **统计口径**：上面「0.33 倍标准差」这类数字是**描述性比值**（总体标准差 ddof=0），**不是显著性检验**。真正的推断要走三层检验（朴素配对 t → Nadeau–Bengio 依赖校正 t → 精确 Wilcoxon）叠 Holm 校正——本仓库跑完后的结论就是上面第一行：**没有任何指标存活**。详见 [31 章](./31-训练与校准-让置信度真正可用.md) 与 `reports/gap_stats.json`。
+
+规模：**15 个脚本 / 23 份入库报告 / 44 条测试 / 4 张图 / CI 全绿**。
 
 ```bash
 cd minimal-decision-bench
@@ -107,11 +120,11 @@ make check               # lint + 测试 + 教程链接
 | [26](./26-垂直领域判别模型总览-从判别外置到自建内核.md) | 系统边界与发布边界 | [`README.md`](./minimal-decision-bench/README.md), [`LEARNER-GUIDE.md`](./minimal-decision-bench/LEARNER-GUIDE.md) |
 | [27](./27-任务建模-把业务流程压成可训练Schema.md) | schema 建模 | [`schemas/v1.json`](./minimal-decision-bench/schemas/v1.json), [`src/minimal_decision_bench/schema.py`](./minimal-decision-bench/src/minimal_decision_bench/schema.py) |
 | [28](./28-数据工程I-标注协议与难例覆盖.md) | 数据协议与 hard cases | [`scripts/00_make_data.py`](./minimal-decision-bench/scripts/00_make_data.py), [`src/minimal_decision_bench/data_builder.py`](./minimal-decision-bench/src/minimal_decision_bench/data_builder.py) |
-| [29](./29-数据工程II-规则基线与错误剖面.md) | 可解释基线与误差剖面意识 | [`scripts/03_compare_and_route.py`](./minimal-decision-bench/scripts/03_compare_and_route.py), `reports/comparison_report.json`（生成物） |
+| [29](./29-数据工程II-规则基线与错误剖面.md) | 可解释基线与误差剖面意识 | [`scripts/03_compare_and_route.py`](./minimal-decision-bench/scripts/03_compare_and_route.py), `reports/comparison_report.json`（已入库） |
 | [30](./30-模型骨架-Encoder+DecisionHead设计.md) | 三头任务骨架 | [`src/minimal_decision_bench/trainers.py`](./minimal-decision-bench/src/minimal_decision_bench/trainers.py), [`scripts/01_train_encoder.py`](./minimal-decision-bench/scripts/01_train_encoder.py) |
-| [31](./31-训练与校准-让置信度真正可用.md) | 训练与置信度指标 | [`src/minimal_decision_bench/metrics.py`](./minimal-decision-bench/src/minimal_decision_bench/metrics.py), `reports/encoder_metrics.json`, `reports/qwen_lora_metrics.json`（生成物） |
+| [31](./31-训练与校准-让置信度真正可用.md) | 训练与置信度指标 | [`src/minimal_decision_bench/metrics.py`](./minimal-decision-bench/src/minimal_decision_bench/metrics.py), `reports/encoder_metrics.json`, `reports/qwen_lora_metrics.json`（已入库） |
 | [32](./32-推理优化-量化批处理与延迟基准.md) | 推理路径与部署前优化 | [`src/minimal_decision_bench/routing.py`](./minimal-decision-bench/src/minimal_decision_bench/routing.py), [`scripts/03_compare_and_route.py`](./minimal-decision-bench/scripts/03_compare_and_route.py) |
-| [33](./33-上线治理-灰度回滚与持续进化.md) | 上线治理与回滚策略 | `reports/comparison_report.json`（生成物，作为治理输入样例） |
+| [33](./33-上线治理-灰度回滚与持续进化.md) | 上线治理与回滚策略 | `reports/comparison_report.json`（已入库，作为治理输入样例） |
 
 ---
 
@@ -229,6 +242,16 @@ make check               # lint + 测试 + 教程链接
 - **模型**：Qwen2.5-0.5B（Mac M 系列可用 MPS）
 - **任务**：中文情感三分类
 - **框架**：TRL `GRPOTrainer`（比 verl 更适合入门）
+
+> ⚠️ **它和 `minimal-decision-bench/` 不是平行的两条路，别混为一谈。**
+>
+> | | `minimal-verl/` | `minimal-decision-bench/` |
+> |---|---|---|
+> | 栈 | **TRL**（`GRPOTrainer`）、macOS / **MPS**、**单步任务** | PyTorch / sklearn，**判别模型**（分类 + 回归） |
+> | 验证什么 | **工具链**能不能跑通：SFT → GRPO → eval | **判别路线**该怎么选：规则 vs encoder vs LLM |
+> | 不验证什么 | **不验证 Agentic RL 能力**——情感三分类是单步闭集任务，按 [25 章](./25-判别能力外置-什么时候不该用RL.md) 的判据本来就不需要 RL | 不验证策略类任务 |
+>
+> `minimal-verl/` 自己的 README 写得很直白：「**情感分类本身不需要 Agentic RL**……**它是『工具链验证示例』，不是『Agentic RL 能力示例』**」。它练的是**工具**，不是**能力**。
 
 ```bash
 cd minimal-verl
