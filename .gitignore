@@ -40,3 +40,6 @@ minimal-verl/docs/PROGRESS.md
 
 # 助手工作区（本地工作笔记，不属于教程内容）
 .workbuddy-ai/
+
+# 本地 git 推送辅助脚本（绕过 git push、仅本机使用，不进版本库）
+tools/push_via_api.py
